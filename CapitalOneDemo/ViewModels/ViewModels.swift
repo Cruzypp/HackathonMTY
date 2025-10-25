@@ -33,6 +33,13 @@ final class MonthSelector: ObservableObject {
 
 // MARK: - Ledger ViewModel (formerly LedgerStore)
 final class LedgerViewModel: ObservableObject {
+    // Suma de saldos de cuentas checking (mock: suma de ingresos menos gastos si no hay cuentas reales)
+    var checkingBalanceThisMonth: Double {
+        // Si tienes cuentas reales, aquí deberías sumar solo las de tipo "checking".
+        // Por ahora, igualamos a netThisMonth para mantenerlo funcional.
+        // Si tienes un array de cuentas, reemplaza esta lógica por la suma de balances de cuentas checking.
+        return netThisMonth
+    }
     // Injected dependency
     @ObservedObject var monthSelector: MonthSelector
 
@@ -40,20 +47,17 @@ final class LedgerViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     // Published Data
-    @Published var transactions: [Tx] = [
-        .init(date: .now, title: "Groceries", category: "Food", amount: 48.2, kind: .expense),
-        .init(date: .now, title: "Metro", category: "Transport", amount: 12, kind: .expense),
-        .init(date: .now.addingTimeInterval(TimeInterval(-86400*3)), title: "Salary", category: "Salary", amount: 3200, kind: .income),
-        .init(date: .now.addingTimeInterval(TimeInterval(-86400*10)), title: "Upwork", category: "Freelance", amount: 380, kind: .income),
-        .init(date: .now.addingTimeInterval(TimeInterval(-86400*5)), title: "Electric Bill", category: "Bills", amount: 450, kind: .expense),
-        .init(date: .now.addingTimeInterval(TimeInterval(-86400*6)), title: "Dinner", category: "Food", amount: 420, kind: .expense),
-    ]
+    // Real transactions are loaded from the API via Preloader
+    @Published var transactions: [Tx] = []
 
     @Published var budgets: [Budget] = [
         .init(name: "Rent", total: 900),
         .init(name: "Entertainment", total: 600),
         .init(name: "Groceries", total: 700)
     ]
+
+    // New: Hold all accounts for mapping accountId to type
+    @Published var accounts: [Account] = []
 
     // Initializer to receive the dependency
     init(monthSelector: MonthSelector) {
@@ -84,11 +88,11 @@ final class LedgerViewModel: ObservableObject {
     var netThisMonth: Double { totalIncomeThisMonth - totalSpentThisMonth }
 
     // Mutations
-    func addExpense(title: String, category: String, amount: Double, date: Date = .now) {
-        transactions.append(.init(date: date, title: title, category: category, amount: amount, kind: .expense))
+    func addExpense(title: String, category: String, amount: Double, date: Date = .now, accountId: String? = nil) {
+        transactions.append(.init(date: date, title: title, category: category, amount: amount, kind: .expense, accountId: accountId))
     }
-    func addIncome(title: String, category: String, amount: Double, date: Date = .now) {
-        transactions.append(.init(date: date, title: title, category: category, amount: amount, kind: .income))
+    func addIncome(title: String, category: String, amount: Double, date: Date = .now, accountId: String? = nil) {
+        transactions.append(.init(date: date, title: title, category: category, amount: amount, kind: .income, accountId: accountId))
     }
     func addBudget(name: String, total: Double) {
         budgets.append(.init(name: name, total: total))

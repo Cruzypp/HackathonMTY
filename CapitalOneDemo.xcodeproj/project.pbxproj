@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		228DA7342EAC996700642B51 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 228DA7332EAC996700642B51 /* .gitignore */; };
+		FC4E67012EAD56A30046ADC4 /* GoogleGenerativeAI in Frameworks */ = {isa = PBXBuildFile; productRef = FC4E67002EAD56A30046ADC4 /* GoogleGenerativeAI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -15,9 +16,22 @@
 		FC41A37B2EAB11FE0093FB9B /* CapitalOneDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CapitalOneDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		FC9F06F12EAD47C400566878 /* Exceptions for "CapitalOneDemo" folder in "CapitalOneDemo" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = FC41A37A2EAB11FE0093FB9B /* CapitalOneDemo */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		FC41A37D2EAB11FE0093FB9B /* CapitalOneDemo */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				FC9F06F12EAD47C400566878 /* Exceptions for "CapitalOneDemo" folder in "CapitalOneDemo" target */,
+			);
 			path = CapitalOneDemo;
 			sourceTree = "<group>";
 		};
@@ -28,6 +42,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FC4E67012EAD56A30046ADC4 /* GoogleGenerativeAI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -71,6 +86,7 @@
 			);
 			name = CapitalOneDemo;
 			packageProductDependencies = (
+				FC4E67002EAD56A30046ADC4 /* GoogleGenerativeAI */,
 			);
 			productName = CapitalOneDemo;
 			productReference = FC41A37B2EAB11FE0093FB9B /* CapitalOneDemo.app */;
@@ -100,6 +116,9 @@
 			);
 			mainGroup = FC41A3722EAB11FE0093FB9B;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				FC4E66FF2EAD56A30046ADC4 /* XCRemoteSwiftPackageReference "generative-ai-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = FC41A37C2EAB11FE0093FB9B /* Products */;
 			projectDirPath = "";
@@ -263,6 +282,7 @@
 				DEVELOPMENT_TEAM = YKZJR6NCMN;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CapitalOneDemo/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -295,6 +315,7 @@
 				DEVELOPMENT_TEAM = YKZJR6NCMN;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CapitalOneDemo/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -339,6 +360,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		FC4E66FF2EAD56A30046ADC4 /* XCRemoteSwiftPackageReference "generative-ai-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/generative-ai-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.5.6;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		FC4E67002EAD56A30046ADC4 /* GoogleGenerativeAI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FC4E66FF2EAD56A30046ADC4 /* XCRemoteSwiftPackageReference "generative-ai-swift" */;
+			productName = GoogleGenerativeAI;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = FC41A3732EAB11FE0093FB9B /* Project object */;
 }

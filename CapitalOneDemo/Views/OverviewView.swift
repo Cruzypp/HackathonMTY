@@ -9,37 +9,48 @@ struct OverviewScreen: View {
         VStack(spacing: 16) {
             MonthSelectionControl()
             
+            //ChatView()
+
+            // Saldo total de cuentas checking
+
             Card {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Total Balance").foregroundStyle(SwiftFinColor.textSecondary).font(.caption)
-                        Text(String(format: "$%.2f USD", vm.netThisMonth))
+                        Text("Total Checking Balance").foregroundStyle(SwiftFinColor.textSecondary).font(.caption)
+                        Text(String(format: "$%.2f USD", vm.checkingBalanceThisMonth))
                             .font(.system(size: 28, weight: .bold))
-                        HStack(spacing: 10) {
-                            Button {
-                                vm.showAddExpense = true
-                            } label: {
-                                Label("Add Expense", systemImage: "minus.circle.fill")
-                            }
-                            .tint(SwiftFinColor.negativeRed)
-
-                            Button {
-                                vm.showAddIncome = true
-                            } label: {
-                                Label("Add Income", systemImage: "plus.circle.fill")
-                            }
-                            .tint(SwiftFinColor.positiveGreen)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.mini)
                     }
-                    Spacer()
-                    MiniTrendChart().frame(width: 120, height: 60)
                 }
+                .frame(width: 360, height: 50)
             }
 
+
+            // Total gastado este mes en tarjetas de crédito
             Card {
-                Text("Cash Flow (Jan–Jun)").font(.headline)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Total spend this month (Credit Cards)").foregroundStyle(SwiftFinColor.textSecondary).font(.caption)
+                    Text(String(format: "$%.2f", totalCreditCardSpentThisMonth))
+                        .font(.system(size: 28, weight: .bold))
+                }
+                .frame(width: 360, height: 50)
+            }
+            
+    // Suma de gastos en tarjetas de crédito en el mes seleccionado
+    var totalCreditCardSpentThisMonth: Double {
+        let monthInterval = monthSelector.monthInterval
+        // Map accountId to account type using ledger.accounts
+        return ledger.transactions.filter { tx in
+            tx.kind == .expense &&
+            monthInterval.contains(tx.date) &&
+            {
+                guard let accId = tx.accountId else { return false }
+                return ledger.accounts.first(where: { $0.id == accId })?.type.lowercased().contains("credit") ?? false
+            }()
+        }.reduce(0) { $0 + $1.amount }
+    }
+
+            Card {
+                Text("Cash Flow (Jan–Oct)").font(.headline)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 BarCashFlow()
                     .frame(height: 180)

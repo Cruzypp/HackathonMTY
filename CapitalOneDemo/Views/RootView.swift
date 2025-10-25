@@ -3,7 +3,9 @@ import SwiftUI
 struct SwiftFinRoot: View {
     @EnvironmentObject var ledger: LedgerViewModel
     @State private var topTab: TopTab = .overview
+    @State private var didPreload = false
 
+    @State private var showAntExpensesPopup = false
     var body: some View {
         NavigationStack {
             ZStack {
@@ -20,22 +22,51 @@ struct SwiftFinRoot: View {
                             case .overview: OverviewScreen()
                             case .expenses: ExpensesScreen()
                             case .income:   IncomeScreen()
-                            case .reports:  ReportsScreen()
                             }
                         }
                         .padding(.horizontal, 16)
                         .padding(.bottom, 24)
                     }
                 }
-            }
-            .foregroundStyle(SwiftFinColor.textPrimary)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    NavigationLink(destination: SimulationView()) {
-                        Image(systemName: "cart.badge.plus")
+                // Botón flotante
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        Button(action: { showAntExpensesPopup = true }) {
+                            Image(systemName: "ant.fill")
+                                .font(.system(size: 28))
+                                .foregroundColor(.white)
+                                .padding()
+                                .background(Color.blue)
+                                .clipShape(Circle())
+                                .shadow(radius: 4)
+                        }
+                        .padding()
                     }
                 }
             }
+            .foregroundStyle(SwiftFinColor.textPrimary)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    NavigationLink(destination: DebugAPIView()) {
+                        Image(systemName: "ant.circle")
+                            .foregroundStyle(SwiftFinColor.textSecondary)
+                    }
+                }
+            }
+            .onAppear {
+                // Preload accounts and transactions once
+                guard !didPreload else { return }
+                didPreload = true
+                let apiKey = AuthStore.shared.readApiKey() ?? LocalSecrets.nessieApiKey
+                let customerId = AuthStore.shared.readCustomerId() ?? LocalSecrets.nessieCustomerId
+                Preloader.preloadAll(customerId: customerId, apiKey: apiKey, into: ledger)
+            }
+        }
+        .sheet(isPresented: $showAntExpensesPopup) {
+            AntExpensesPopupView()
+                .environmentObject(ledger)
         }
     }
 }

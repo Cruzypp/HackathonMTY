@@ -50,26 +50,25 @@ final class SimulationViewModel: ObservableObject {
         NessieService.shared.fetchAccounts(forCustomerId: customerId, apiKey: apiKey) { [weak self] result in
             DispatchQueue.main.async {
                 switch result {
-                case .success(let nessieAccounts):
-                    // Map NessieAccount -> AccountModel
-                    let mapped: [AccountModel] = nessieAccounts.map { na in
+                case .success(let apiAccounts):
+                    // Map API Account -> AccountModel
+                    let mapped: [AccountModel] = apiAccounts.map { account in
                         // choose id: prefer converting _id to UUID if possible, otherwise generate
                         let id: UUID = {
-                            if let s = na._id, let u = UUID(uuidString: s) { return u }
+                            if let u = UUID(uuidString: account.id) { return u }
                             return UUID()
                         }()
 
                         // derive type
                         let type: AccountModel.AccountType = {
-                            if let t = na.type?.lowercased() {
-                                if t.contains("credit") || t.contains("card") { return .creditCard }
-                            }
+                            let t = account.type.lowercased()
+                            if t.contains("credit") || t.contains("card") { return .creditCard }
                             return .bank
                         }()
 
-                        let name = na.nickname ?? na.type ?? "Cuenta"
-                        let bal = na.balance?.amount ?? 0.0
-                        let limit = na.balance?.limit
+                        let name = account.nickname.isEmpty ? account.type : account.nickname
+                        let bal = account.balance
+                        let limit: Double? = nil // Nessie API doesn't provide credit limit in this structure
 
                         return AccountModel(id: id, name: name, type: type, balance: bal, creditLimit: limit)
                     }
@@ -136,7 +135,7 @@ final class SimulationViewModel: ObservableObject {
             monthlyMsiAmount = purchase.amount / Double(purchase.msiMonths)
 
             // For credit card MSI we treat it as monthly extra owed (not interest) but with monthly outflow
-            var start = Date()
+            let start = Date()
             for m in 0..<purchase.msiMonths {
                 let monthStart = Calendar.current.date(byAdding: .month, value: m, to: start) ?? start
                 let breakdown: [UUID: Double] = [purchase.accountId: monthlyMsiAmount]
@@ -169,7 +168,7 @@ final class SimulationViewModel: ObservableObject {
 
             // Apply MSI payment for this month if present
             if purchase.msiMonths > 1 {
-                let mpIndex = monthlyPayments.indices.firstIndex(where: { calendar.isDate(monthlyPayments[$0].monthStart, equalTo: monthDate, toGranularity: .month) })
+                _ = monthlyPayments.indices.firstIndex(where: { calendar.isDate(monthlyPayments[$0].monthStart, equalTo: monthDate, toGranularity: .month) })
                 // If not exact match, apply by offset: for simplicity assume payments occur each month m from 0..msiMonths-1
                 if m < purchase.msiMonths {
                     // subtract monthly payment from the bank account (prefer bank) or increase CC payment
