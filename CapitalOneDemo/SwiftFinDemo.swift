@@ -37,152 +37,28 @@ enum SwiftFinColor {
     static let negativeRed     = Color(hex: "#EF4444")
     static let divider         = Color(hex: "#1F2937")
 }
-
-// MARK: - Month Selector Store
-final class MonthSelector: ObservableObject {
-    @Published var selectedDate: Date = Date()
-    
-    var currentMonthYear: String {
-        selectedDate.formatted(.dateTime.month().year())
-    }
-    
-    var monthInterval: DateInterval {
-        let cal = Calendar.current
-        let start = cal.date(from: cal.dateComponents([.year,.month], from: selectedDate))!
-        let end = cal.date(byAdding: .month, value: 1, to: start)!
-        return DateInterval(start: start, end: end)
-    }
-    
-    func nextMonth() {
-        selectedDate = Calendar.current.date(byAdding: .month, value: 1, to: selectedDate)!
-    }
-    
-    func previousMonth() {
-        selectedDate = Calendar.current.date(byAdding: .month, value: -1, to: selectedDate)!
-    }
-    
-    var isCurrentMonth: Bool {
-        Calendar.current.isDate(selectedDate, equalTo: Date(), toGranularity: .month)
-    }
-}
-
-// MARK: - Ledger Store
-final class LedgerStore: ObservableObject {
-    
-    // Injected dependency
-    @ObservedObject var monthSelector: MonthSelector
-    
-    // Listener for Combine
-    private var cancellables = Set<AnyCancellable>()
-    
-    struct Tx: Identifiable {
-        enum Kind { case expense, income }
-        let id = UUID()
-        var date: Date
-        var title: String
-        var category: String
-        var amount: Double    // valor absoluto
-        var kind: Kind
-    }
-
-    struct Budget: Identifiable {
-        let id = UUID()
-        var name: String
-        var total: Double
-    }
-
-    // Published Data
-    @Published var transactions: [Tx] = [
-        .init(date: .now, title: "Groceries", category: "Food", amount: 48.2, kind: .expense),
-        .init(date: .now, title: "Metro", category: "Transport", amount: 12, kind: .expense),
-        .init(date: .now.addingTimeInterval(TimeInterval(-86400*3)), title: "Salary", category: "Salary", amount: 3200, kind: .income),
-        .init(date: .now.addingTimeInterval(TimeInterval(-86400*10)), title: "Upwork", category: "Freelance", amount: 380, kind: .income),
-        .init(date: .now.addingTimeInterval(TimeInterval(-86400*5)), title: "Electric Bill", category: "Bills", amount: 450, kind: .expense),
-        .init(date: .now.addingTimeInterval(TimeInterval(-86400*6)), title: "Dinner", category: "Food", amount: 420, kind: .expense),
-    ]
-
-    @Published var budgets: [Budget] = [
-        .init(name: "Rent", total: 900),
-        .init(name: "Entertainment", total: 600),
-        .init(name: "Groceries", total: 700)
-    ]
-    
-    // Initializer to receive the dependency
-    init(monthSelector: MonthSelector) {
-        self.monthSelector = monthSelector
-        
-        // Configurar un listener para forzar la actualización de LedgerStore
-        monthSelector.$selectedDate
-            .sink { [weak self] _ in
-                self?.objectWillChange.send()
-            }
-            .store(in: &cancellables)
-    }
-    
-    // El mesInterval ahora usa la propiedad inyectada
-    private var selectedMonthInterval: DateInterval { monthSelector.monthInterval }
-    
-    // Filtros
-    var expensesThisMonth: [Tx] {
-        transactions.filter { $0.kind == .expense && selectedMonthInterval.contains($0.date) }
-    }
-    var incomeThisMonth: [Tx] {
-        transactions.filter { $0.kind == .income && selectedMonthInterval.contains($0.date) }
-    }
-
-    // Totales
-    var totalSpentThisMonth: Double { expensesThisMonth.reduce(0) { $0 + $1.amount } }
-    var totalIncomeThisMonth: Double { incomeThisMonth.reduce(0) { $0 + $1.amount } }
-    var netThisMonth: Double { totalIncomeThisMonth - totalSpentThisMonth }
-
-    // Agregar datos
-    func addExpense(title: String, category: String, amount: Double, date: Date = .now) {
-        transactions.append(.init(date: date, title: title, category: category, amount: amount, kind: .expense))
-    }
-    func addIncome(title: String, category: String, amount: Double, date: Date = .now) {
-        transactions.append(.init(date: date, title: title, category: category, amount: amount, kind: .income))
-    }
-    func addBudget(name: String, total: Double) {
-        budgets.append(.init(name: name, total: total))
-    }
-
-    // Desgloses
-    func spentByCategoryThisMonth() -> [(name: String, amount: Double)] {
-        let grouped = Dictionary(grouping: expensesThisMonth, by: { $0.category })
-            .mapValues { $0.reduce(0) { $0 + $1.amount } }
-        return grouped.map { ($0.key, $0.value) }.sorted { $0.amount > $1.amount }
-    }
-    func usedForBudget(_ name: String) -> Double {
-        expensesThisMonth.filter { $0.category == name || ($0.category == "Food" && name == "Groceries") }
-            .reduce(0) { $0 + $1.amount }
-    }
-}
+// NOTE: MonthSelector and LedgerViewModel have been moved to `ViewModels.swift`
+//       Models `Tx` and `Budget` are in `Models.swift`.
 
 // MARK: - Demo App (SOLUCIÓN DEFINITIVA AL ERROR DE INICIALIZACIÓN)
 @main
 struct SwiftFinDemoApp: App {
-    
-    // 1. Declara las propiedades, pero NO las inicialices en la declaración.
+
+    // State objects: create in init to control order
     @StateObject var monthSelector: MonthSelector
-    @StateObject var ledger: LedgerStore
-    
-    // 2. Usa el init() para controlar el orden
+    @StateObject var ledger: LedgerViewModel
+
     init() {
-        // 3. Crea la instancia de la dependencia (MonthSelector) PRIMERO y guárdala localmente.
         let ms = MonthSelector()
-        
-        // 4. Asigna esa instancia local (ms) a la propiedad envuelta (wrappedValue) de monthSelector.
         _monthSelector = StateObject(wrappedValue: ms)
-        
-        // 5. INYECTA la misma instancia (ms) en el LedgerStore al inicializarlo.
-        _ledger = StateObject(wrappedValue: LedgerStore(monthSelector: ms))
+        _ledger = StateObject(wrappedValue: LedgerViewModel(monthSelector: ms))
     }
-    
+
     var body: some Scene {
         WindowGroup {
             SwiftFinRoot()
                 .environmentObject(ledger)
-                .environmentObject(monthSelector) // Inyectar ambos al entorno
+                .environmentObject(monthSelector)
                 .preferredColorScheme(.dark)
         }
     }
@@ -191,7 +67,7 @@ struct SwiftFinDemoApp: App {
 enum TopTab: String, CaseIterable { case overview = "Overview", expenses = "Expenses", income = "Income", reports = "Reports" }
 
 struct SwiftFinRoot: View {
-    @EnvironmentObject var ledger: LedgerStore
+    @EnvironmentObject var ledger: LedgerViewModel
     @State private var topTab: TopTab = .overview
 
     var body: some View {
@@ -313,7 +189,7 @@ struct Card<Content: View>: View {
 
 // MARK: - Overview Screen
 struct OverviewScreen: View {
-    @EnvironmentObject var ledger: LedgerStore
+    @EnvironmentObject var ledger: LedgerViewModel
     @State private var showAllExpenses = false
     @State private var showAddIncome = false
     @State private var showAddExpense = false
@@ -381,7 +257,7 @@ struct OverviewScreen: View {
 
 // MARK: - Expenses Screen
 struct ExpensesScreen: View {
-    @EnvironmentObject var ledger: LedgerStore
+    @EnvironmentObject var ledger: LedgerViewModel
 
     var body: some View {
         VStack(spacing: 16) {
@@ -425,7 +301,7 @@ struct ExpensesScreen: View {
 
 // MARK: - Income Screen
 struct IncomeScreen: View {
-    @EnvironmentObject var ledger: LedgerStore
+    @EnvironmentObject var ledger: LedgerViewModel
     var body: some View {
         VStack(spacing: 16) {
             MonthSelectionControl()
@@ -512,7 +388,7 @@ struct BarCashFlow: View {
 }
 
 struct DonutSpendingConnected: View {
-    @EnvironmentObject var ledger: LedgerStore
+    @EnvironmentObject var ledger: LedgerViewModel
     private let palette: [Color] = [.blue, .green, .orange, .purple, .red, .teal, .yellow]
     var body: some View {
         let data = ledger.spentByCategoryThisMonth()
@@ -592,7 +468,7 @@ struct CategoryRowBar: View {
 // MARK: - Lists & Rows
 struct RecentTransactions: View {
     let title: String
-    let rows: [LedgerStore.Tx]
+    let rows: [Tx]
     var onViewAll: (() -> Void)? = nil
 
     var body: some View {
@@ -619,7 +495,7 @@ struct RecentTransactions: View {
 }
 
 struct RecentExpenses: View {
-    @EnvironmentObject var ledger: LedgerStore
+    @EnvironmentObject var ledger: LedgerViewModel
     var body: some View {
         Card {
             Text("Recent Expenses").font(.headline)
@@ -636,7 +512,7 @@ struct RecentExpenses: View {
 }
 
 struct RecentIncome: View {
-    @EnvironmentObject var ledger: LedgerStore
+    @EnvironmentObject var ledger: LedgerViewModel
     var body: some View {
         Card {
             Text("Recent Income").font(.headline)
@@ -676,7 +552,7 @@ struct RowTx: View {
 
 // MARK: - Budgets Section (connected)
 struct BudgetsSectionConnected: View {
-    @EnvironmentObject var ledger: LedgerStore
+    @EnvironmentObject var ledger: LedgerViewModel
     @State private var showAddBudget = false
 
     var body: some View {
@@ -777,7 +653,7 @@ struct BudgetRow: View {
 
 // MARK: - Reports Screen
 struct ReportsScreen: View {
-    @EnvironmentObject var ledger: LedgerStore
+    @EnvironmentObject var ledger: LedgerViewModel
     
     var body: some View {
         VStack(spacing: 16) {
@@ -853,7 +729,7 @@ struct ReportsScreen: View {
 /// Add New Expense
 struct AddExpenseSheet: View {
     @Environment(\.dismiss) var dismiss
-    @EnvironmentObject var ledger: LedgerStore
+    @EnvironmentObject var ledger: LedgerViewModel
     
     @State private var title: String = ""
     @State private var amount: Double? = nil
@@ -899,7 +775,7 @@ struct AddExpenseSheet: View {
 /// Add New Income
 struct AddIncomeSheet: View {
     @Environment(\.dismiss) var dismiss
-    @EnvironmentObject var ledger: LedgerStore
+    @EnvironmentObject var ledger: LedgerViewModel
     
     @State private var title: String = ""
     @State private var amount: Double? = nil
@@ -945,7 +821,7 @@ struct AddIncomeSheet: View {
 /// Add New Budget
 struct AddBudgetSheet: View {
     @Environment(\.dismiss) var dismiss
-    @EnvironmentObject var ledger: LedgerStore
+    @EnvironmentObject var ledger: LedgerViewModel
     
     @State private var name: String = ""
     @State private var total: Double? = nil
@@ -982,7 +858,7 @@ struct AddBudgetSheet: View {
 
 // MARK: - View All Expenses Sheet
 struct ViewAllExpensesView: View {
-    @EnvironmentObject var ledger: LedgerStore
+    @EnvironmentObject var ledger: LedgerViewModel
     @Environment(\.dismiss) var dismiss
     
     var body: some View {
