@@ -80,30 +80,35 @@ You DO NOT have direct, real-time access to this data.
         messages.append(ChatMessage(text: "Hello! I'm SwiftFin-Bot, your personal AI financial analyst. To get started, you can ask me a question like 'What is inflation?' or **paste your recent expenses from the 'Expenses' tab** for a personalized analysis!", isFromUser: false))
     }
     
+    // En ChatViewModel.swift
     func sendMessage(_ text: String) async {
-        guard let chat = chat else {
-            print("Error: El chat no está inicializado.")
-            return
-        }
+        guard let chat = chat else { return }
         
-        // Añade el mensaje del usuario a la UI
         messages.append(ChatMessage(text: text, isFromUser: true))
-        isLoading = true // Muestra el indicador de "escribiendo..."
+        isLoading = true // Esto ahora solo se mostrará un instante
 
         do {
-            // Envía el mensaje a la API de Gemini
-            let response = try await chat.sendMessage(text)
+            // Usa 'sendMessageStream' en lugar de 'sendMessage'
+            let responseStream = chat.sendMessageStream(text)
             
-            isLoading = false // Oculta el indicador
+            isLoading = false
             
-            if let botResponse = response.text {
-                // Añade la respuesta del bot a la UI
-                messages.append(ChatMessage(text: botResponse, isFromUser: false))
+            // Añade un mensaje vacío para el bot, que iremos llenando
+            messages.append(ChatMessage(text: "", isFromUser: false))
+            
+            // Itera sobre el stream
+            for try await chunk in responseStream {
+                if let newTextChunk = chunk.text {
+                    // Toma el último mensaje (el del bot) y añádele el nuevo texto
+                    if let lastMessage = messages.last {
+                        let updatedText = lastMessage.text + newTextChunk
+                        messages[messages.count - 1] = ChatMessage(text: updatedText, isFromUser: false)
+                    }
+                }
             }
             
         } catch {
             isLoading = false
-            // Muestra un error en el chat
             messages.append(ChatMessage(text: "An error occurred: \(error.localizedDescription)", isFromUser: false))
         }
     }
