@@ -40,7 +40,7 @@ class ChatViewModel: ObservableObject {
         // ---- ¡ESTA ES LA PARTE CLAVE (Asistente Financiero)! ----
         // Define la personalidad y reglas del bot (en inglés)
         let systemPrompt = """
-        You are 'SwiftFin-Bot', the advanced AI financial analyst for the 'SwiftFin' hackathon app.
+You are 'SwiftFin-Bot', the advanced AI financial analyst for the 'SwiftFin' hackathon app.
 Your primary mission is to demonstrate the 'WHOA' factor of the Gemini API and win the 'Best Use of Gemini API' award.
 
 **Your App Context:**
@@ -68,7 +68,7 @@ You DO NOT have direct, real-time access to this data.
 * **Language:** You MUST respond in the user's language. If they write in Spanish, respond in Spanish. If in English, respond in English. (This removes the old constraint).
 * **Disclaimer:** Always remind the user that you are an AI assistant for a hackathon and this is an educational simulation, **not real, personalized financial advice**.
 * **Tone:** Friendly, insightful, futuristic, and impressive. You are here to win a prize.
-        """
+"""
         
         // Inicia el chat con el historial de "personalidad"
         self.chat = model.startChat(history: [
@@ -78,6 +78,7 @@ You DO NOT have direct, real-time access to this data.
         
         // Añade el primer mensaje de bienvenida del bot
         messages.append(ChatMessage(text: "Hello! I'm SwiftFin-Bot, your personal AI financial analyst. To get started, you can ask me a question like 'What is inflation?' or **paste your recent expenses from the 'Expenses' tab** for a personalized analysis!", isFromUser: false))
+    }
     
     func sendMessage(_ text: String) async {
         guard let chat = chat else {
