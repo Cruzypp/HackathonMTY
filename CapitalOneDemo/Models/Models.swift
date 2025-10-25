@@ -9,6 +9,7 @@ struct Tx: Identifiable {
     var category: String
     var amount: Double    // absolute value
     var kind: Kind
+    var accountId: String? // Link to Account.id for filtering by type
 }
 
 struct Budget: Identifiable {

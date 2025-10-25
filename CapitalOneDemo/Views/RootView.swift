@@ -30,6 +30,12 @@ struct SwiftFinRoot: View {
             }
             .foregroundStyle(SwiftFinColor.textPrimary)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    NavigationLink(destination: DebugAPIView()) {
+                        Image(systemName: "ant.circle")
+                            .foregroundStyle(SwiftFinColor.textSecondary)
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     NavigationLink(destination: SimulationView()) {
                         Image(systemName: "cart.badge.plus")

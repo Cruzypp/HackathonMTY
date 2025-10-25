@@ -20,6 +20,29 @@ struct IncomeScreen: View {
                 }
             }
 
+            // Show checking balance from API
+            Card {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text("Checking Balance (API)").foregroundStyle(SwiftFinColor.textSecondary).font(.caption)
+                        Spacer()
+                        Button(action: {
+                            vm.refreshData()
+                        }) {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.caption)
+                                .foregroundStyle(SwiftFinColor.accentBlue)
+                        }
+                    }
+                    if vm.isLoadingBalance {
+                        ProgressView()
+                    } else {
+                        Text(String(format: "$%.2f", vm.checkingBalance))
+                            .font(.system(size: 22, weight: .semibold))
+                    }
+                }
+            }
+
             Card {
                 Text("Income (last 6 months)").font(.headline)
                     .frame(maxWidth: .infinity, alignment: .leading)
