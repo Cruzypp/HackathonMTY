@@ -9,7 +9,7 @@ struct OverviewScreen: View {
         VStack(spacing: 16) {
             MonthSelectionControl()
             
-            ChatView()
+            //ChatView()
 
             // Saldo total de cuentas checking
 

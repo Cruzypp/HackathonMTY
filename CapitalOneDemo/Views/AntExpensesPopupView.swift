@@ -35,18 +35,15 @@ struct AntExpensesPopupView: View {
         VStack(spacing: 20) {
             // Section title in English
             Text("Micro-Spending Insights").font(.title2).bold()
-            // Assistant section placeholder
+            // Assistant section with ChatView
             VStack(alignment: .leading, spacing: 8) {
                 Text("Assistant")
                     .font(.headline)
                 Text("Here you will receive personalized advice and can talk about your spending.")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
-                // Placeholder for future assistant view integration
-                Rectangle()
-                    .fill(Color.gray.opacity(0.2))
-                    .frame(height: 60)
-                    .overlay(Text("Assistant View Placeholder").font(.caption))
+                ChatView()
+                    .frame(height: 300)
             }
             .padding(.vertical, 8)
 
