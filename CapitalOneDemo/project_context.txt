@@ -1,0 +1,40 @@
+# Contexto del Proyecto HackathonMTY
+
+## Estructura MVVM
+- Models: Representan datos puros (Tx, Budget, AntExpense, etc.)
+- ViewModels: Gestionan lógica y estado de cada pantalla (ExpensesViewModel, AntExpensesViewModel, etc.)
+- Services: Acceso a APIs, autenticación, almacenamiento seguro (AccountStore, NessieService, etc.)
+- Views: Pantallas principales (Overview, Expenses, Income, Reports, Simulation, RootView)
+- Components: Vistas reutilizables (CardView, BudgetsViews, ChartsViews, etc.)
+
+## Pantallas principales
+- Overview: Resumen financiero
+- Expenses: Gastos mensuales
+- Income: Ingresos mensuales
+- Reports: Reportes y análisis
+- Simulation: Simulador financiero
+- RootView: Navegación principal
+
+## Funcionalidad de gastos hormiga
+- Modelo: AntExpense (usa Tx)
+- ViewModel: AntExpensesViewModel (filtra, calcula y simula ahorro)
+- Integración: Se conecta a transacciones del LedgerViewModel
+
+## Checklist de desarrollo
+- Estructura MVVM ✔️
+- Flujo principal ✔️
+- Modelos y ViewModels base ✔️
+- Lógica de gastos hormiga y simulador de ahorro ⏳
+- Conexión ViewModels con servicios ⏳
+- Mostrar datos en pantallas ⏳
+- Integraciones externas (Capital One, OpenRoute, ElevenLabs) ⏳
+- UI, notificaciones, gamificación, módulo educativo, pruebas, demo ⏳
+
+## Recursos y APIs
+- Capital One/Nessie API: Datos bancarios
+- OpenRoute API: Geolocalización
+- ElevenLabs: Audio para tips
+
+## Equipo
+- 3 integrantes, trabajo colaborativo con IA
+- Este archivo se actualiza con cada avance de código o planeación
