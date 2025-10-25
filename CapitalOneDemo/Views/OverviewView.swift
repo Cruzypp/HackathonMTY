@@ -8,8 +8,11 @@ struct OverviewScreen: View {
     var body: some View {
         VStack(spacing: 16) {
             MonthSelectionControl()
+            
+            ChatView()
 
             // Saldo total de cuentas checking
+
             Card {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 6) {
