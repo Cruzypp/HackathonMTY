@@ -4,6 +4,7 @@ struct SwiftFinRoot: View {
     @EnvironmentObject var ledger: LedgerViewModel
     @State private var topTab: TopTab = .overview
 
+    @State private var showAntExpensesPopup = false
     var body: some View {
         NavigationStack {
             ZStack {
@@ -27,6 +28,23 @@ struct SwiftFinRoot: View {
                         .padding(.bottom, 24)
                     }
                 }
+                // Botón flotante
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        Button(action: { showAntExpensesPopup = true }) {
+                            Image(systemName: "ant.fill")
+                                .font(.system(size: 28))
+                                .foregroundColor(.white)
+                                .padding()
+                                .background(Color.blue)
+                                .clipShape(Circle())
+                                .shadow(radius: 4)
+                        }
+                        .padding()
+                    }
+                }
             }
             .foregroundStyle(SwiftFinColor.textPrimary)
             .toolbar {
@@ -36,6 +54,10 @@ struct SwiftFinRoot: View {
                     }
                 }
             }
+        }
+        .sheet(isPresented: $showAntExpensesPopup) {
+            AntExpensesPopupView()
+                .environmentObject(ledger)
         }
     }
 }
