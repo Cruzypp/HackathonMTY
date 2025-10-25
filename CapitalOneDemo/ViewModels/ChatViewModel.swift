@@ -33,7 +33,7 @@ class ChatViewModel: ObservableObject {
         
         // Configura el modelo
         let model = GenerativeModel(
-            name: "gemini-1.5-flash", // Flash es más rápido, ideal para hackathon
+            name: "gemini-2.5-flash", // Flash es más rápido, ideal para hackathon
             apiKey: apiKey
         )
         
