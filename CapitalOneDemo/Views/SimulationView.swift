@@ -198,8 +198,8 @@ struct SimulationView: View {
             } else {
                 // Use LocalSecrets if available
                 #if DEBUG
-                apiKeyText = LocalSecrets.nessieApiKey
-                customerIdText = LocalSecrets.nessieCustomerId
+                apiKeyText = Bundle.main.object(forInfoDictionaryKey: "API_KEY") as? String ?? ""
+                customerIdText = Bundle.main.object(forInfoDictionaryKey: "CUSTOMER_ID") as? String ?? ""
                 #endif
             }
             #endif

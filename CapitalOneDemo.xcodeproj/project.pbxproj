@@ -7,12 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		224381172EAD1BF40096EEB1 /* Secrets.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 224381162EAD1BF40096EEB1 /* Secrets.xcconfig */; };
 		228DA7342EAC996700642B51 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 228DA7332EAC996700642B51 /* .gitignore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		224381162EAD1BF40096EEB1 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 		228DA7332EAC996700642B51 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		FC41A37B2EAB11FE0093FB9B /* CapitalOneDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CapitalOneDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -39,7 +37,6 @@
 		FC41A3722EAB11FE0093FB9B = {
 			isa = PBXGroup;
 			children = (
-				224381162EAD1BF40096EEB1 /* Secrets.xcconfig */,
 				228DA7332EAC996700642B51 /* .gitignore */,
 				FC41A37D2EAB11FE0093FB9B /* CapitalOneDemo */,
 				FC41A37C2EAB11FE0093FB9B /* Products */,
@@ -118,7 +115,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				224381172EAD1BF40096EEB1 /* Secrets.xcconfig in Resources */,
 				228DA7342EAC996700642B51 /* .gitignore in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
