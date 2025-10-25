@@ -1,5 +1,6 @@
 import Foundation
 import GoogleGenerativeAI
+import Combine
 
 // 1. Modelo de datos para un mensaje
 struct ChatMessage: Identifiable {
@@ -20,9 +21,9 @@ class ChatViewModel: ObservableObject {
     
     init() {
         // Carga la API Key de forma segura desde el plist
-        guard let path = Bundle.main.path(forResource: "GenerativeAI-Info", ofType: "plist"),
+        guard let path = Bundle.main.path(forResource: "GenerativeAIInfo", ofType: "plist"),
               let config = NSDictionary(contentsOfFile: path),
-              let apiKey = config["APIKEY"] as? String else {
+              let apiKey = config["GEMINI_API_KEY"] as? String else {
             
             print("ERROR: No se pudo encontrar la API Key. Asegúrate de tener GenerativeAI-Info.plist")
             // Añade un mensaje de error visible para el usuario
@@ -32,7 +33,7 @@ class ChatViewModel: ObservableObject {
         
         // Configura el modelo
         let model = GenerativeModel(
-            name: "gemini-2.5-flash", // Flash es más rápido, ideal para hackathon
+            name: "gemini-1.5-flash", // Flash es más rápido, ideal para hackathon
             apiKey: apiKey
         )
         

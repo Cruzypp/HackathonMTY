@@ -9,6 +9,8 @@ struct OverviewScreen: View {
         VStack(spacing: 16) {
             MonthSelectionControl()
             
+            ChatView()
+            
             Card {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 6) {
