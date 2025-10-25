@@ -1,0 +1,10 @@
+## Local secrets and build artifacts
+# Local secrets used for development (do NOT commit)
+CapitalOneDemo/Config/LocalSecrets.swift
+
+# Xcode
+.DS_Store
+DerivedData/
+build/
+*.xcworkspace
+xcuserdata/
