@@ -3,6 +3,7 @@ import SwiftUI
 struct SwiftFinRoot: View {
     @EnvironmentObject var ledger: LedgerViewModel
     @State private var topTab: TopTab = .overview
+    @State private var didPreload = false
 
     var body: some View {
         NavigationStack {
@@ -20,7 +21,6 @@ struct SwiftFinRoot: View {
                             case .overview: OverviewScreen()
                             case .expenses: ExpensesScreen()
                             case .income:   IncomeScreen()
-                            case .reports:  ReportsScreen()
                             }
                         }
                         .padding(.horizontal, 16)
@@ -36,11 +36,14 @@ struct SwiftFinRoot: View {
                             .foregroundStyle(SwiftFinColor.textSecondary)
                     }
                 }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    NavigationLink(destination: SimulationView()) {
-                        Image(systemName: "cart.badge.plus")
-                    }
-                }
+            }
+            .onAppear {
+                // Preload accounts and transactions once
+                guard !didPreload else { return }
+                didPreload = true
+                let apiKey = AuthStore.shared.readApiKey() ?? LocalSecrets.nessieApiKey
+                let customerId = AuthStore.shared.readCustomerId() ?? LocalSecrets.nessieCustomerId
+                Preloader.preloadAll(customerId: customerId, apiKey: apiKey, into: ledger)
             }
         }
     }

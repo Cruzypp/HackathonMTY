@@ -63,6 +63,6 @@ struct SwiftFinDemoApp: App {
 }
 
 // Top-level tab enum
-enum TopTab: String, CaseIterable { case overview = "Overview", expenses = "Expenses", income = "Income", reports = "Reports" }
+enum TopTab: String, CaseIterable { case overview = "Overview", expenses = "Expenses", income = "Income" }
 
 

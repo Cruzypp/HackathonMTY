@@ -14,13 +14,35 @@ final class Preloader {
         print("🔄 Preloader: Starting data preload for customer: \(customerId)")
         
         fetchAndStoreAccounts(customerId: customerId, apiKey: apiKey) { accounts in
-            guard !accounts.isEmpty else {
+            var allAccounts = accounts
+            
+            // Add override checking account if configured and not already in list
+            let overrideId = LocalSecrets.nessieCheckingAccountId
+            if !overrideId.isEmpty && !allAccounts.contains(where: { $0.id == overrideId }) {
+                print("✅ Preloader: Adding override checking account: \(overrideId)")
+                let synthetic = Account(
+                    id: overrideId,
+                    type: "Checking",
+                    nickname: "BBVA Nómina",
+                    rewards: 0,
+                    balance: 0,
+                    accountNumber: "",
+                    customerId: customerId
+                )
+                allAccounts.append(synthetic)
+            }
+            
+            guard !allAccounts.isEmpty else {
                 print("⚠️ Preloader: No accounts found")
                 return
             }
             
-            print("✅ Preloader: Stored \(accounts.count) accounts")
-            loadTransactionsForAccounts(accounts, apiKey: apiKey, into: ledger)
+            print("✅ Preloader: Stored \(allAccounts.count) accounts")
+            // Keep a copy of raw accounts in ledger to map accountId -> account type
+            DispatchQueue.main.async {
+                ledger.accounts = allAccounts
+            }
+            loadTransactionsForAccounts(allAccounts, apiKey: apiKey, into: ledger)
         }
     }
     
@@ -106,9 +128,11 @@ final class Preloader {
             let transaction = Tx(
                 date: date,
                 title: purchase.description,
-                category: accountAlias,
+                category: "Uncategorized",
                 amount: purchase.amount,
-                kind: .expense
+                kind: .expense,
+                accountId: purchase.payerId,
+                purchaseId: purchase.id
             )
             addTransactionToLedger(transaction, ledger: ledger)
         } else {
@@ -141,9 +165,11 @@ final class Preloader {
             let transaction = Tx(
                 date: parseDate(purchase.purchaseDate),
                 title: title,
-                category: accountAlias,
+                category: "Uncategorized",
                 amount: purchase.amount,
-                kind: .expense
+                kind: .expense,
+                accountId: purchase.payerId,
+                purchaseId: purchase.id
             )
             addTransactionToLedger(transaction, ledger: ledger)
         }
@@ -167,7 +193,8 @@ final class Preloader {
                         title: deposit.description,
                         category: accountAlias,
                         amount: deposit.amount,
-                        kind: .income
+                        kind: .income,
+                        accountId: deposit.payee_id
                     )
                 }
                 
@@ -184,7 +211,14 @@ final class Preloader {
     /// Safely adds a transaction to the ledger on the main queue
     private static func addTransactionToLedger(_ transaction: Tx, ledger: LedgerViewModel) {
         DispatchQueue.main.async {
-            ledger.transactions.append(transaction)
+            print("🧾 Preloader: Upsert Tx -> date=\(transaction.date), title=\(transaction.title), amount=\(transaction.amount), accountId=\(transaction.accountId ?? "nil"), purchaseId=\(transaction.purchaseId ?? "nil")")
+            if let pid = transaction.purchaseId,
+               let idx = ledger.transactions.firstIndex(where: { $0.purchaseId == pid }) {
+                // Update existing transaction (avoid duplicates when reloading)
+                ledger.transactions[idx] = transaction
+            } else {
+                ledger.transactions.append(transaction)
+            }
         }
     }
     
