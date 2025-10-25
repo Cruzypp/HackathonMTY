@@ -3,7 +3,7 @@
 //  SwiftFin – Dark UI starter with Store, Screens, Sheets & Reports
 //  Requires iOS 16+ (Charts)
 //
-//  Paste this single file into your Xcode project.
+//  
 //
 
 import SwiftUI
