@@ -1,3 +1,28 @@
+// Resumen financiero para IA y contexto
+struct FinancialSummary {
+    let totalBalance: Double
+    let totalAntExpenses: Double
+    let topCategories: [String]
+    let recentTransactions: [Tx]
+}
+
+extension LedgerViewModel {
+    func financialSummary() -> FinancialSummary? {
+        guard !accounts.isEmpty else { return nil }
+        let totalBalance = accounts.reduce(0) { $0 + $1.balance }
+    // Ejemplo: gastos hormiga son transacciones menores a $100 y de tipo 'expense'
+    let antExpenses = transactions.filter { $0.amount < 100 && $0.kind == .expense }
+        let totalAntExpenses = antExpenses.reduce(0) { $0 + $1.amount }
+        let categories = Dictionary(grouping: antExpenses, by: { $0.category })
+        let topCategories = categories.keys.sorted { categories[$0]!.count > categories[$1]!.count }
+        return FinancialSummary(
+            totalBalance: totalBalance,
+            totalAntExpenses: totalAntExpenses,
+            topCategories: Array(topCategories.prefix(3)),
+            recentTransactions: Array(transactions.prefix(5))
+        )
+    }
+}
 import Foundation
 import SwiftUI
 import Combine

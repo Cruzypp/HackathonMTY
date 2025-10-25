@@ -1,12 +1,15 @@
 import SwiftUI
 
 struct ChatView: View {
-    // 1. Referencia al ViewModel
-    @StateObject private var viewModel = ChatViewModel()
-    
-    // 2. Variable para el campo de texto
+    @EnvironmentObject var ledger: LedgerViewModel
+    @StateObject private var viewModel: ChatViewModel
+
     @State private var textInput: String = ""
-    
+
+    init(ledger: LedgerViewModel) {
+        _viewModel = StateObject(wrappedValue: ChatViewModel(ledger: ledger))
+    }
+
     var body: some View {
         VStack {
             // --- Área de Mensajes ---
@@ -74,8 +77,10 @@ struct ChatView: View {
     }
 }
 
+// Preview con LedgerViewModel de prueba
 #Preview {
-    NavigationView { // Envuelve en NavigationView para ver el título
-        ChatView()
+    NavigationView {
+        ChatView(ledger: PreviewMocks.ledger)
+            .environmentObject(PreviewMocks.ledger)
     }
 }

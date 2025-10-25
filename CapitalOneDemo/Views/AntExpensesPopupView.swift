@@ -32,66 +32,16 @@ struct AntExpensesPopupView: View {
     }
     
     var body: some View {
-        VStack(spacing: 20) {
-            // Section title in English
-            Text("Micro-Spending Insights").font(.title2).bold()
-            // Assistant section with ChatView
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Assistant")
-                    .font(.headline)
-                Text("Here you will receive personalized advice and can talk about your spending.")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                ChatView()
-                    .frame(height: 300)
-            }
-            .padding(.vertical, 8)
-
-            // Period picker
-            Picker("Period", selection: $selectedPeriod) {
-                ForEach(Period.allCases) { period in
-                    Text(period.rawValue).tag(period)
-                }
-            }
-            .pickerStyle(SegmentedPickerStyle())
-
-            // Data section
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Total: $\(totalFiltered, specifier: "%.2f")")
-                    .font(.headline)
-                Text("Potential savings (50%): $\(totalFiltered * 0.5, specifier: "%.2f")")
-                    .font(.subheadline)
-            }
-
-            // List of micro-spending
-            List(filteredExpenses) { tx in
-                HStack {
-                    Text(tx.title)
-                    Spacer()
-                    Text(String(format: "$%.2f", tx.amount))
-                }
-            }
-            .frame(maxHeight: 200)
-
-            Divider()
-
-            // Future sections for planning
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Other Insights")
-                    .font(.headline)
-                Text("- Category breakdown (e.g. Coffee, Snacks, Transport)")
-                Text("- Spending trends (weekly, monthly)")
-                Text("- Personalized tips and challenges")
-                Text("- Voice assistant integration")
-            }
-            .font(.caption)
-            .foregroundColor(.secondary)
-
-            Spacer()
+        VStack(spacing: 0) {
+            Text("Micro-Spending Chat")
+                .font(.title2).bold()
+                .padding(.top, 12)
+            ChatView(ledger: ledger)
+                .frame(maxHeight: .infinity)
+                .padding(.horizontal)
         }
+        .background(Color(.systemGray6))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
         .padding()
-        .onAppear {
-            antVM.loadAntExpenses(from: ledger.transactions)
-        }
     }
 }
