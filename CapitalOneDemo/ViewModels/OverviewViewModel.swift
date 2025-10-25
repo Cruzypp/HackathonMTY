@@ -1,7 +1,9 @@
+    // Expose checking balance for OverviewScreen
 import Foundation
 import Combine
 
 final class OverviewViewModel: ObservableObject {
+    @Published var checkingBalanceThisMonth: Double = 0
     @Published var showAllExpenses = false
     @Published var showAddExpense = false
     @Published var showAddIncome = false
@@ -18,6 +20,23 @@ final class OverviewViewModel: ObservableObject {
         ledger.objectWillChange
             .sink { [weak self] _ in self?.objectWillChange.send() }
             .store(in: &cancellables)
+
+        // Fetch real checking account balance from API
+        let apiKey = AuthStore.shared.readApiKey() ?? LocalSecrets.nessieApiKey
+        let checkingId = "68fcccfb9683f20dd51a43ae" // ID de la cuenta BBVA Nómina
+        NessieService.shared.performRequest(
+            URLRequest(url: URL(string: "http://api.nessieisreal.com/accounts/\(checkingId)?key=\(apiKey)")!),
+            completion: { [weak self] (result: Result<Account, NessieService.NessieError>) in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success(let acc):
+                        self?.checkingBalanceThisMonth = acc.balance
+                    case .failure:
+                        self?.checkingBalanceThisMonth = 0
+                    }
+                }
+            }
+        )
     }
 
     var netThisMonth: Double { ledger?.netThisMonth ?? 0 }
