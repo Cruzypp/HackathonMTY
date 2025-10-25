@@ -10,6 +10,7 @@ struct Tx: Identifiable {
     var amount: Double    // absolute value
     var kind: Kind
     var accountId: String? // Link to Account.id for filtering by type
+    var purchaseId: String? = nil // Link to API purchase id to sync user category
 }
 
 struct Budget: Identifiable {
