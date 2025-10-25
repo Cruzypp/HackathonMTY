@@ -8,3 +8,6 @@ DerivedData/
 build/
 *.xcworkspace
 xcuserdata/
+*.xcconfig
+Secrets.xcconfig
+CapitalOneDemo/Config/Secrets.xcconfig
