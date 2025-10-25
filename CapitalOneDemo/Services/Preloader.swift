@@ -195,15 +195,23 @@ final class Preloader {
         if let date = iso8601Formatter.date(from: dateString) {
             return date
         }
-        
-        // Try common API date format
+
+        // Try full date-time format
         let dateFormatter = DateFormatter()
         dateFormatter.locale = Locale(identifier: "en_US_POSIX")
         dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
         if let date = dateFormatter.date(from: dateString) {
             return date
         }
-        
+
+        // Try just date (yyyy-MM-dd)
+        let shortFormatter = DateFormatter()
+        shortFormatter.locale = Locale(identifier: "en_US_POSIX")
+        shortFormatter.dateFormat = "yyyy-MM-dd"
+        if let date = shortFormatter.date(from: dateString) {
+            return date
+        }
+
         // Fallback to current date
         print("⚠️ Preloader: Unable to parse date '\(dateString)', using current date")
         return Date()
