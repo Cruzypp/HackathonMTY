@@ -63,11 +63,11 @@ struct LoginView: View {
                 }
                 .padding(.bottom, 10)
                 
-                Text("Bienvenido a SwiftFin")
+                Text("Welcome to SwiftFin")
                     .font(.largeTitle.bold())
                     .foregroundStyle(.white)
                 
-                Text("Tu analista financiero IA.")
+                Text("Your AI financial analyst.")
                     .font(.headline)
                     .foregroundStyle(.white.opacity(0.7))
 

@@ -1,3 +1,11 @@
+## 👥 Collaborators
+
+Add your name below to recognize your contribution to SwiftFin:
+
+- Miguel Ángel Gavito González
+- Juan Luis Alvarez Cisneros
+- Cruz Yael Pérez González
+
 <h2>🔐 Configuración de secretos locales (<code>LocalSecrets.swift</code>)</h2> <p> El archivo <code>LocalSecrets.swift</code> contiene la configuración local para las <b>claves y credenciales necesarias</b> en la comunicación con la <b>API de Capital One (Nessie API)</b>.<br> Su propósito es centralizar el acceso a estas claves dentro del proyecto y permitir que se lean dinámicamente desde la configuración de compilación (<code>Info.plist</code> o <code>.xcconfig</code>) o, en su defecto, desde valores predeterminados. </p>
 <h3>📄 Código del archivo</h3>
 
