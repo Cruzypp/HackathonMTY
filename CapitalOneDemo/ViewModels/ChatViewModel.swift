@@ -1,3 +1,5 @@
+//ChatViewModel.swift
+
 import Foundation
 import GoogleGenerativeAI
 import Combine
