@@ -9,6 +9,7 @@ struct ChatView: View {
     
     // 3. variable para datos de usuario
     @EnvironmentObject var ledgerViewModel: LedgerViewModel
+    
     var body: some View {
         VStack {
             // --- Área de Mensajes ---
@@ -43,6 +44,8 @@ struct ChatView: View {
                 }
                 .padding(.horizontal)
             }
+            
+            Spacer()
             
             // --- Barra de Entrada de Texto ---
             HStack {
