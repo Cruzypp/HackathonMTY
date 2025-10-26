@@ -31,15 +31,11 @@ struct MainAppView: View {
 
                             // === Overlay DENTRO del ScrollView (se desplaza y “se queda” en su posición del contenido) ===
                             HStack(spacing: 8) {
-                                Text("Overview")
-                                    .font(.headline)
-                                    .foregroundStyle(SwiftFinColor.textDark)
-
                                 Image(.captwo)
                                     .resizable()
                                     .scaledToFit()
                                     .frame(width: 38, height: 38)
-                                    .offset(x: 100, y: -58)
+                                    .offset(x: 180, y: -58)
                             }
                             .padding(.top, 8)
                             .padding(.horizontal, 16)
@@ -72,15 +68,11 @@ struct MainAppView: View {
                             .padding(.top, overlayHeaderHeight + 8)
 
                             HStack(spacing: 8) {
-                                Text("Expenses")
-                                    .font(.headline)
-                                    .foregroundStyle(SwiftFinColor.textDark)
-
                                 Image(.captwo)
                                     .resizable()
                                     .scaledToFit()
                                     .frame(width: 38, height: 38)
-                                    .offset(x: 100, y: -58)
+                                    .offset(x: 180, y: -58)
                             }
                             .padding(.top, 8)
                             .padding(.horizontal, 16)
@@ -112,19 +104,14 @@ struct MainAppView: View {
                             .padding(.bottom, 24)
                             .padding(.top, overlayHeaderHeight + 8)
 
-                            HStack(spacing: 8) {
-                                Text("Income")
-                                    .font(.headline)
-                                    .foregroundStyle(SwiftFinColor.textDark)
-
+                            HStack{
                                 Image(.captwo)
                                     .resizable()
                                     .scaledToFit()
                                     .frame(width: 38, height: 38)
-                                    .offset(x: 80, y: -58)
+                                    .offset(x: 160, y: -58)
                             }
                             .padding(.top, 8)
-                            .padding(.horizontal, 16)
                             .allowsHitTesting(false)
                         }
                     }
@@ -135,7 +122,7 @@ struct MainAppView: View {
                 .navigationBarTitleDisplayMode(.large)
             }
             .tabItem {
-                Label("Income", systemImage: "dollarsign.circle.fill")
+                Label("income", systemImage: "dollarsign.circle.fill")
             }
             .tag(2)
 
