@@ -4,5 +4,7 @@
 <dict>
 	<key>GEMINI_API_KEY</key>
 	<string>AIzaSyCjjzqutZ04Cq44jL2TPhjlf31fIu9wJPI</string>
+	<key>ELEVEN_API_KEY</key>
+    <string>448e98e2ee9e6d18114aa1669c0aeaa9f7484520f9e7714d7bec1f826a5d7c4c</string>
 </dict>
 </plist>

@@ -4,6 +4,7 @@ import AVFoundation
 
 struct ChatView: View {
     @StateObject private var viewModel = ChatViewModel()
+    @EnvironmentObject var ledger: LedgerViewModel
 
     // Voz y accesibilidad
     @StateObject private var speech = SpeechRecognizer()
@@ -222,6 +223,7 @@ struct ChatView: View {
                 client.updateVoice(playbackRate: 1.2)
                 tts = client
             }
+            viewModel.setContext( ledger.financialSummary )
         }
         .onReceive(speech.$transcript) { live in
             self.liveTranscript = live
