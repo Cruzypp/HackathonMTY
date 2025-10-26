@@ -66,7 +66,7 @@ struct ChatView: View {
                     
                     // <-- CAMBIO AQUI (1 y 2): Se usa 'prompt' para el placeholder blanco
                     TextField("", text: $textInput, prompt:
-                                Text("Ask FinBot... (e.g., 'What is inflation?')")
+                                Text("Ask FinBot...")
                         .foregroundStyle(.white), axis: .vertical // 1. Placeholder blanco
                     )
                         .lineLimit(3)

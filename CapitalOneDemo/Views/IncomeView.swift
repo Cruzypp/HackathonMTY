@@ -9,179 +9,184 @@ struct IncomeScreen: View {
         NavigationStack {
             VStack(spacing: 16) {
                 MonthSelectionControl()
-            
-            Card {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Total Income (This Month)")
-                        .foregroundStyle(SwiftFinColor.textDarkSecondary)
-                        .font(.caption)
-                    Text(String(format: "$%.2f", vm.totalIncomeThisMonth))
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundStyle(SwiftFinColor.textDark)
-                    HStack(spacing: 6) {
-                        Image(systemName: "arrow.up.right")
-                            .foregroundStyle(SwiftFinColor.positiveGreen)
-                        Text("Monthly trend")
-                            .foregroundStyle(SwiftFinColor.positiveGreen)
-                            .font(.footnote)
-                    }
-                }
-            }
-
-            // Show checking balance from API
-            Card {
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack {
-                        Text("Checking Balance (API)")
+                
+                Card {
+                    VStack(alignment: .center, spacing: 6) {
+                        Text("Total Income (This Month)")
                             .foregroundStyle(SwiftFinColor.textDarkSecondary)
                             .font(.caption)
-                        Spacer()
-                        Button(action: {
-                            vm.refreshData()
-                        }) {
-                            Image(systemName: "arrow.clockwise")
-                                .font(.caption)
-                                .foregroundStyle(SwiftFinColor.accentBlue)
-                        }
-                    }
-                    if vm.isLoadingBalance {
-                        ProgressView()
-                    } else {
-                        Text(String(format: "$%.2f", vm.checkingBalance))
-                            .font(.system(size: 22, weight: .semibold))
+                        
+                        Text(String(format: "$%.2f", vm.totalIncomeThisMonth))
+                            .font(.system(size: 28, weight: .bold))
                             .foregroundStyle(SwiftFinColor.textDark)
+                        
+                        HStack(spacing: 6) {
+                            Image(systemName: "arrow.up.right")
+                                .foregroundStyle(SwiftFinColor.positiveGreen)
+                            Text("Monthly trend")
+                                .foregroundStyle(SwiftFinColor.positiveGreen)
+                                .font(.footnote)
+                        }
                     }
+                    .frame(width: 367, height: 50)
+                    .padding(.vertical, 4)
                 }
-            }
-
-            Card {
-                Text("Income (last 6 months)")
-                    .font(.headline)
-                    .foregroundStyle(SwiftFinColor.textDark)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                BarIncome()
-                    .frame(height: 190)
-            }
-
-            Card {
-                Text("Income Sources (This Month)")
-                    .font(.headline)
-                    .foregroundStyle(SwiftFinColor.textDark)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                VStack(spacing: 12) {
-                    let total = max(vm.totalIncomeThisMonth, 1)
-                    let sources = Dictionary(grouping: vm.incomeThisMonth, by: { $0.category })
-                        .map { (name: $0.key, amount: $0.value.reduce(0) { $0 + $1.amount }) }
-                        .sorted { $0.amount > $1.amount }
-                    ForEach(Array(sources.enumerated()), id: \.offset) { _, s in
+                
+                // Show checking balance from API
+                Card {
+                    VStack(alignment: .leading, spacing: 6) {
                         HStack {
-                            Label(s.name, systemImage: "creditcard.fill")
-                                .foregroundStyle(SwiftFinColor.textDark)
+                            Text("Checking Balance (API)")
+                                .foregroundStyle(SwiftFinColor.textDarkSecondary)
+                                .font(.caption)
                             Spacer()
-                            Text(String(format: "$%.0f", s.amount))
+                            Button(action: {
+                                vm.refreshData()
+                            }) {
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.caption)
+                                    .foregroundStyle(SwiftFinColor.accentBlue)
+                            }
+                        }
+                        if vm.isLoadingBalance {
+                            ProgressView()
+                        } else {
+                            Text(String(format: "$%.2f", vm.checkingBalance))
+                                .font(.system(size: 22, weight: .semibold))
                                 .foregroundStyle(SwiftFinColor.textDark)
                         }
-                        ProgressView(value: s.amount / total)
-                            .tint(SwiftFinColor.accentBlue)
                     }
                 }
-            }
-
-            Card {
-                Text("Expense Sources (This Month)")
-                    .font(.headline)
-                    .foregroundStyle(SwiftFinColor.textDark)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                VStack(spacing: 12) {
-                    let totalExpenses = max(vm.totalExpensesThisMonth, 1)
-                    let expenseSources = Dictionary(grouping: vm.expensesThisMonth, by: { $0.category })
-                        .map { (name: $0.key, amount: $0.value.reduce(0) { $0 + $1.amount }) }
-                        .sorted { $0.amount > $1.amount }
-                    
-                    if expenseSources.isEmpty {
-                        Text("No expenses recorded this month")
-                            .font(.caption)
-                            .foregroundStyle(SwiftFinColor.textDarkSecondary)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding(.vertical, 8)
-                    } else {
-                        ForEach(Array(expenseSources.enumerated()), id: \.offset) { _, s in
+                
+                Card {
+                    Text("Income (last 6 months)")
+                        .font(.headline)
+                        .foregroundStyle(SwiftFinColor.textDark)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    BarIncome()
+                        .frame(height: 190)
+                }
+                
+                Card {
+                    Text("Income Sources (This Month)")
+                        .font(.headline)
+                        .foregroundStyle(SwiftFinColor.textDark)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    VStack(spacing: 12) {
+                        let total = max(vm.totalIncomeThisMonth, 1)
+                        let sources = Dictionary(grouping: vm.incomeThisMonth, by: { $0.category })
+                            .map { (name: $0.key, amount: $0.value.reduce(0) { $0 + $1.amount }) }
+                            .sorted { $0.amount > $1.amount }
+                        ForEach(Array(sources.enumerated()), id: \.offset) { _, s in
                             HStack {
-                                Label(s.name, systemImage: "cart.fill")
+                                Label(s.name, systemImage: "creditcard.fill")
                                     .foregroundStyle(SwiftFinColor.textDark)
                                 Spacer()
                                 Text(String(format: "$%.0f", s.amount))
+                                    .foregroundStyle(SwiftFinColor.textDark)
+                            }
+                            ProgressView(value: s.amount / total)
+                                .tint(SwiftFinColor.accentBlue)
+                        }
+                    }
+                }
+                
+                Card {
+                    Text("Expense Sources (This Month)")
+                        .font(.headline)
+                        .foregroundStyle(SwiftFinColor.textDark)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    VStack(spacing: 12) {
+                        let totalExpenses = max(vm.totalExpensesThisMonth, 1)
+                        let expenseSources = Dictionary(grouping: vm.expensesThisMonth, by: { $0.category })
+                            .map { (name: $0.key, amount: $0.value.reduce(0) { $0 + $1.amount }) }
+                            .sorted { $0.amount > $1.amount }
+                        
+                        if expenseSources.isEmpty {
+                            Text("No expenses recorded this month")
+                                .font(.caption)
+                                .foregroundStyle(SwiftFinColor.textDarkSecondary)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .padding(.vertical, 8)
+                        } else {
+                            ForEach(Array(expenseSources.enumerated()), id: \.offset) { _, s in
+                                HStack {
+                                    Label(s.name, systemImage: "cart.fill")
+                                        .foregroundStyle(SwiftFinColor.textDark)
+                                    Spacer()
+                                    Text(String(format: "$%.0f", s.amount))
+                                        .foregroundStyle(SwiftFinColor.negativeRed)
+                                }
+                                ProgressView(value: s.amount / totalExpenses)
+                                    .tint(SwiftFinColor.negativeRed)
+                            }
+                        }
+                    }
+                }
+                
+                Card {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Net This Month")
+                            .foregroundStyle(SwiftFinColor.textDarkSecondary)
+                            .font(.caption)
+                        HStack(alignment: .firstTextBaseline, spacing: 4) {
+                            Text(String(format: "$%.2f", vm.netThisMonth))
+                                .font(.system(size: 28, weight: .bold))
+                                .foregroundStyle(vm.netThisMonth >= 0 ? SwiftFinColor.positiveGreen : SwiftFinColor.negativeRed)
+                            
+                            Text(vm.netThisMonth >= 0 ? "(Surplus)" : "(Deficit)")
+                                .font(.caption)
+                                .foregroundStyle(SwiftFinColor.textDarkSecondary)
+                        }
+                        
+                        Divider()
+                            .background(SwiftFinColor.textDarkSecondary)
+                            .padding(.vertical, 4)
+                        
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Income")
+                                    .font(.caption)
+                                    .foregroundStyle(SwiftFinColor.textDarkSecondary)
+                                Text(String(format: "$%.2f", vm.totalIncomeThisMonth))
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(SwiftFinColor.positiveGreen)
+                            }
+                            
+                            Spacer()
+                            
+                            Image(systemName: "minus")
+                                .font(.caption)
+                                .foregroundStyle(SwiftFinColor.textDarkSecondary)
+                            
+                            Spacer()
+                            
+                            VStack(alignment: .trailing, spacing: 4) {
+                                Text("Expenses")
+                                    .font(.caption)
+                                    .foregroundStyle(SwiftFinColor.textDarkSecondary)
+                                Text(String(format: "$%.2f", vm.totalExpensesThisMonth))
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
                                     .foregroundStyle(SwiftFinColor.negativeRed)
                             }
-                            ProgressView(value: s.amount / totalExpenses)
-                                .tint(SwiftFinColor.negativeRed)
                         }
                     }
                 }
+                
+                // Checking Accounts Carousel with Deposits AND Purchases
+                CheckingAccountsCarouselView(
+                    accounts: vm.checkingAccounts(),
+                    isLoadingTransactions: vm.isLoadingTransactions,
+                    depositsForAccount: vm.depositsForAccount,
+                    purchasesForAccount: vm.purchasesForAccount
+                )
+                
+                // RecentIncome() - Moved to Checking Accounts Carousel above
             }
-
-            Card {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Net This Month")
-                        .foregroundStyle(SwiftFinColor.textDarkSecondary)
-                        .font(.caption)
-                    HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text(String(format: "$%.2f", vm.netThisMonth))
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundStyle(vm.netThisMonth >= 0 ? SwiftFinColor.positiveGreen : SwiftFinColor.negativeRed)
-                        
-                        Text(vm.netThisMonth >= 0 ? "(Surplus)" : "(Deficit)")
-                            .font(.caption)
-                            .foregroundStyle(SwiftFinColor.textDarkSecondary)
-                    }
-                    
-                    Divider()
-                        .background(SwiftFinColor.textDarkSecondary)
-                        .padding(.vertical, 4)
-                    
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Income")
-                                .font(.caption)
-                                .foregroundStyle(SwiftFinColor.textDarkSecondary)
-                            Text(String(format: "$%.2f", vm.totalIncomeThisMonth))
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(SwiftFinColor.positiveGreen)
-                        }
-                        
-                        Spacer()
-                        
-                        Image(systemName: "minus")
-                            .font(.caption)
-                            .foregroundStyle(SwiftFinColor.textDarkSecondary)
-                        
-                        Spacer()
-                        
-                        VStack(alignment: .trailing, spacing: 4) {
-                            Text("Expenses")
-                                .font(.caption)
-                                .foregroundStyle(SwiftFinColor.textDarkSecondary)
-                            Text(String(format: "$%.2f", vm.totalExpensesThisMonth))
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(SwiftFinColor.negativeRed)
-                        }
-                    }
-                }
-            }
-
-            // Checking Accounts Carousel with Deposits AND Purchases
-            CheckingAccountsCarouselView(
-                accounts: vm.checkingAccounts(),
-                isLoadingTransactions: vm.isLoadingTransactions,
-                depositsForAccount: vm.depositsForAccount,
-                purchasesForAccount: vm.purchasesForAccount
-            )
-
-            // RecentIncome() - Moved to Checking Accounts Carousel above
-        }
-        .onAppear { vm.configure(ledger: ledger, monthSelector: monthSelector) }
+            .onAppear { vm.configure(ledger: ledger, monthSelector: monthSelector) }
+            
         } // Close NavigationStack
     }
 }

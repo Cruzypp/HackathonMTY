@@ -13,7 +13,7 @@ struct MessageBubble: View {
                     Circle()
                         .fill(
                             LinearGradient(
-                                colors: [SwiftFinColor.accentBlue.opacity(0.3), SwiftFinColor.accentBlue.opacity(0.1)],
+                                colors: [Color.red.opacity(0.3), Color.red.opacity(0.1)],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
@@ -33,7 +33,7 @@ struct MessageBubble: View {
                     
                     Image(systemName: "waveform.and.person.filled")
                         .font(.system(size: 16))
-                        .foregroundStyle(SwiftFinColor.accentBlue)
+                        .foregroundStyle(Color.red.opacity(0.6))
                 }
             }
             

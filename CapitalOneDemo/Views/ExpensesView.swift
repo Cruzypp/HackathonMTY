@@ -33,7 +33,7 @@ struct ExpensesScreen: View {
             
             // Total credit card debt
             Card {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .center , spacing: 6) {
                     Text("Total Credit Card Debt")
                         .foregroundStyle(SwiftFinColor.textDarkSecondary)
                         .font(.caption)
@@ -51,6 +51,8 @@ struct ExpensesScreen: View {
                         }
                     }
                 }
+                .frame(width: 367, height: 50)
+                .padding(.vertical, 4)
             }
             
             Card {
