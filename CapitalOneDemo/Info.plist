@@ -2,15 +2,26 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- URL Types (si los usas) -->
 	<key>CFBundleURLTypes</key>
 	<array>
-		<dict/>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+		</dict>
 	</array>
 
+	<!-- App Transport Security (solo para dev si lo necesitas) -->
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+
+	<!-- 🔒 PRIVACY: requeridos para usar micrófono y reconocimiento de voz -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Necesitamos el micrófono para que puedas hablar con el bot.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Necesitamos reconocimiento de voz para transcribir lo que dices.</string>
 </dict>
 </plist>

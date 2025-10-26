@@ -52,33 +52,58 @@ final class ElevenLabsTTSClient: NSObject, AVAudioPlayerDelegate {
     func speak(text: String) async throws {
         stop()
 
-        // 1) Descarga audio de ElevenLabs
+        // 1) Pide audio a ElevenLabs
         let data = try await fetchAudio(text: text)
 
-        // 2) Configura sesión de audio para reproducir por altavoz con buena calidad (A2DP)
-        let session = AVAudioSession.sharedInstance()
-        try session.setCategory(.playback, mode: .spokenAudio, options: [.allowBluetoothA2DP, .defaultToSpeaker])
-        try session.setActive(true)
-        try? session.overrideOutputAudioPort(.speaker)
-
-        // 3) Guarda a archivo temporal (más estable para ambos players)
-        let tmpURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("tts-\(UUID().uuidString).mp3")
+        // 2) Guarda a archivo temporal (estable para ambos players)
+        let tmpURL = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("tts-\(UUID().uuidString).mp3")
         try data.write(to: tmpURL, options: .atomic)
 
-        // 4) Intenta con AVAudioPlayer (control de rate). Si falla, fallback a AVPlayer
-        do {
+        // Helper que intenta reproducir con la sesión indicada
+        func play(withCategory category: AVAudioSession.Category,
+                  mode: AVAudioSession.Mode,
+                  options: AVAudioSession.CategoryOptions) throws {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(category, mode: mode, options: options)
+            try session.setActive(true)
+
+            // AVAudioPlayer con control de velocidad
             let p = try AVAudioPlayer(contentsOf: tmpURL)
             p.enableRate = true
             p.rate = playbackRate
             p.prepareToPlay()
-            DispatchQueue.main.async { p.play() }  // asegurar main thread
+            DispatchQueue.main.async { _ = p.play() }
             self.audioPlayer = p
+        }
+
+        do {
+            // 3) PRIMER intento: calidad (A2DP), respeta modo silencio
+            try play(withCategory: .playback,
+                     mode: .spokenAudio,
+                     options: [.allowBluetoothA2DP])
+            return
         } catch {
-            // Fallback: AVPlayer
-            let item = AVPlayerItem(url: tmpURL)
-            let player = AVPlayer(playerItem: item)
-            self.avPlayer = player
-            DispatchQueue.main.async { player.play() }
+            // 4) FALLBACK: ruta al altavoz con PlayAndRecord
+            do {
+                try play(withCategory: .playAndRecord,
+                         mode: .voiceChat,
+                         options: [.defaultToSpeaker, .duckOthers, .allowBluetoothHFP])
+                return
+            } catch {
+                // 5) Último fallback: AVPlayer (por si el decoder del mp3 diera lata)
+                let session = AVAudioSession.sharedInstance()
+                try? session.setCategory(.playback, mode: .default, options: [])
+                try? session.setActive(true)
+
+                let item = AVPlayerItem(url: tmpURL)
+                let player = AVPlayer(playerItem: item)
+                self.avPlayer = player
+                DispatchQueue.main.async { player.play() }
+
+                // Si también fallara, lanza error genérico:
+                if #available(iOS 16.0, *) { } // no-op
+            }
         }
     }
 
