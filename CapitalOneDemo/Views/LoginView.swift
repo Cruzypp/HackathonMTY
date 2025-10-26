@@ -245,4 +245,5 @@ extension View {
 
 #Preview {
     LoginView(isLoggedIn: .constant(false))
+        .preferredColorScheme(.light)
 }

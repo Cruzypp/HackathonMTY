@@ -64,7 +64,9 @@ struct IncomeScreen: View {
             }
 
             Card {
-                Text("Income Sources (This Month)").font(.headline)
+                Text("Income Sources (This Month)")
+                    .font(.headline)
+                    .foregroundStyle(SwiftFinColor.textDark)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 VStack(spacing: 12) {
                     let total = max(vm.totalIncomeThisMonth, 1)
@@ -74,8 +76,10 @@ struct IncomeScreen: View {
                     ForEach(Array(sources.enumerated()), id: \.offset) { _, s in
                         HStack {
                             Label(s.name, systemImage: "creditcard.fill")
+                                .foregroundStyle(SwiftFinColor.textDark)
                             Spacer()
                             Text(String(format: "$%.0f", s.amount))
+                                .foregroundStyle(SwiftFinColor.textDark)
                         }
                         ProgressView(value: s.amount / total)
                             .tint(SwiftFinColor.accentBlue)
@@ -83,7 +87,6 @@ struct IncomeScreen: View {
                 }
             }
 
-            // NEW: Expense Sources This Month
             Card {
                 Text("Expense Sources (This Month)")
                     .font(.headline)
@@ -117,7 +120,6 @@ struct IncomeScreen: View {
                 }
             }
 
-            // NEW: Net This Month (Income - Expenses)
             Card {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Net This Month")
@@ -134,6 +136,7 @@ struct IncomeScreen: View {
                     }
                     
                     Divider()
+                        .background(SwiftFinColor.textDarkSecondary)
                         .padding(.vertical, 4)
                     
                     HStack {
@@ -195,18 +198,20 @@ struct CheckingAccountsCarouselView: View {
         Card {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
-                    Text("Checking Accounts").font(.headline)
+                    Text("Checking Accounts")
+                        .font(.headline)
+                        .foregroundStyle(SwiftFinColor.textDark)
                     Spacer()
                     if isLoadingTransactions { ProgressView().scaleEffect(0.8) }
                 }
                 
                 if !accounts.isEmpty {
-                    // Page indicators
+                    // Page indicators con colores más visibles
                     if accounts.count > 1 {
                         HStack(spacing: 8) {
                             ForEach(0..<accounts.count, id: \.self) { index in
                                 Circle()
-                                    .fill(index == currentIndex ? SwiftFinColor.textPrimary : SwiftFinColor.textSecondary.opacity(0.3))
+                                    .fill(index == currentIndex ? Color.white : Color.white.opacity(0.3))
                                     .frame(width: 8, height: 8)
                                     .animation(.easeInOut(duration: 0.2), value: currentIndex)
                             }
@@ -240,18 +245,18 @@ struct CheckingAccountsCarouselView: View {
                             }
                     )
                     
-                    // Navigation hint
+                    // Navigation hint con colores más visibles
                     if accounts.count > 1 {
                         HStack(spacing: 4) {
                             Image(systemName: "chevron.left")
                                 .font(.caption2)
-                                .foregroundStyle(SwiftFinColor.textDarkSecondary.opacity(0.6))
+                                .foregroundStyle(Color.white.opacity(0.7))
                             Text("Swipe to change accounts")
                                 .font(.caption2)
-                                .foregroundStyle(SwiftFinColor.textDarkSecondary.opacity(0.6))
+                                .foregroundStyle(Color.white.opacity(0.7))
                             Image(systemName: "chevron.right")
                                 .font(.caption2)
-                                .foregroundStyle(SwiftFinColor.textDarkSecondary.opacity(0.6))
+                                .foregroundStyle(Color.white.opacity(0.7))
                         }
                         .padding(.bottom, 8)
                     }
@@ -466,7 +471,7 @@ struct PurchaseRowIncome: View {
                     if let category = purchase.selectedCategory, category != "-" {
                         Text("•")
                             .font(.caption)
-                            .foregroundStyle(SwiftFinColor.textSecondary)
+                            .foregroundStyle(SwiftFinColor.textDarkSecondary)
                         
                         Image(systemName: category.categoryIcon)
                             .font(.caption)
@@ -489,7 +494,7 @@ struct PurchaseRowIncome: View {
                 
                 Image(systemName: "chevron.right")
                     .font(.caption2)
-                    .foregroundStyle(SwiftFinColor.textSecondary)
+                    .foregroundStyle(SwiftFinColor.textDarkSecondary)
             }
         }
     }

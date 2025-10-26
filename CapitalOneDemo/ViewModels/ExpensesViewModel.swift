@@ -23,6 +23,7 @@ struct CreditCardDebt: Identifiable {
 
 final class ExpensesViewModel: ObservableObject {
     private(set) var ledger: LedgerViewModel?
+    private(set) var monthSelector: MonthSelector?
     private var cancellables = Set<AnyCancellable>()
     
     @Published var apiPurchases: [PurchaseDisplay] = []
@@ -31,26 +32,230 @@ final class ExpensesViewModel: ObservableObject {
     @Published var totalCreditDebt: Double = 0.0
     @Published var isLoadingDebt: Bool = false
 
+    // Cache para evitar recargas
+    private var lastFetchTime: Date?
+    private let cacheDuration: TimeInterval = 180 // 3 minutos
+
     func configure(ledger: LedgerViewModel, monthSelector: MonthSelector) {
         guard self.ledger == nil else { 
             print("⚠️ ExpensesVM: Already configured")
             return 
         }
         self.ledger = ledger
+        self.monthSelector = monthSelector
         ledger.objectWillChange
             .sink { [weak self] _ in self?.objectWillChange.send() }
             .store(in: &cancellables)
         
-        print("🚀 ExpensesVM: Configuring and fetching data from API...")
-        
-        // Fetch purchases and debt from API
+        // Solo cargar si no hay cache válido
+        if shouldRefresh() {
+            print("🚀 ExpensesVM: Configuring and fetching data from API...")
+            fetchPurchasesFromAPI()
+            fetchCreditCardDebt()
+        } else {
+            print("✅ ExpensesVM: Using cached data")
+        }
+    }
+    
+    private func shouldRefresh() -> Bool {
+        guard let lastTime = lastFetchTime else { return true }
+        return Date().timeIntervalSince(lastTime) > cacheDuration
+    }
+    
+    func refreshData() {
+        print("🔄 ExpensesVM: Manual refresh triggered")
+        lastFetchTime = nil // Forzar recarga
         fetchPurchasesFromAPI()
         fetchCreditCardDebt()
     }
+    
+    func fetchPurchasesFromAPI() {
+        // Evitar múltiples llamadas simultáneas
+        guard !isLoadingPurchases else {
+            print("⚠️ ExpensesVM: Already loading purchases")
+            return
+        }
+        
+        let apiKey = AuthStore.shared.readApiKey() ?? LocalSecrets.nessieApiKey
+        let customerId = AuthStore.shared.readCustomerId() ?? LocalSecrets.nessieCustomerId
+        
+        print("🔍 ExpensesVM: Fetching purchases for customer: \(customerId)")
+        
+        isLoadingPurchases = true
+        lastFetchTime = Date()
+        
+        NessieService.shared.fetchAccounts(forCustomerId: customerId, apiKey: apiKey) { [weak self] result in
+            switch result {
+            case .success(let accounts):
+                print("✅ ExpensesVM: Got \(accounts.count) accounts")
+                
+                // OPTIMIZACIÓN: Usar clase wrapper para estado compartido thread-safe
+                let sharedState = PurchasesSharedState()
+                let dispatchQueue = DispatchQueue(label: "com.swiftfin.purchases", attributes: .concurrent)
+                let group = DispatchGroup()
+                
+                // Procesar cuentas en paralelo
+                for account in accounts {
+                    group.enter()
+                    dispatchQueue.async {
+                        self?.processPurchasesForAccount(
+                            account,
+                            apiKey: apiKey,
+                            sharedState: sharedState
+                        ) {
+                            group.leave()
+                        }
+                    }
+                }
 
+                // Override checking account
+                let checkingOverride = LocalSecrets.nessieCheckingAccountId
+                if !checkingOverride.isEmpty {
+                    group.enter()
+                    dispatchQueue.async {
+                        let account = Account(
+                            id: checkingOverride,
+                            type: "Checking",
+                            nickname: "BBVA Nómina",
+                            rewards: 0,
+                            balance: 0,
+                            accountNumber: "",
+                            customerId: customerId
+                        )
+                        self?.processPurchasesForAccount(
+                            account,
+                            apiKey: apiKey,
+                            sharedState: sharedState
+                        ) {
+                            group.leave()
+                        }
+                    }
+                }
+                
+                group.notify(queue: .main) {
+                    self?.apiPurchases = sharedState.getAllPurchases().sorted { $0.date > $1.date }
+                    self?.isLoadingPurchases = false
+                    print("✅ Total purchases loaded: \(sharedState.getAllPurchases().count)")
+                }
+                
+            case .failure(let error):
+                print("❌ ExpensesVM: Error fetching accounts: \(error)")
+                DispatchQueue.main.async {
+                    self?.isLoadingPurchases = false
+                }
+            }
+        }
+    }
+    
+    // Helper para procesar purchases de una cuenta con clase wrapper
+    private func processPurchasesForAccount(
+        _ account: Account,
+        apiKey: String,
+        sharedState: PurchasesSharedState,
+        completion: @escaping () -> Void
+    ) {
+        let accountAlias = account.nickname.isEmpty ? account.type : account.nickname
+        
+        NessieService.shared.fetchPurchases(forAccountId: account.id, apiKey: apiKey) { result in
+            defer { completion() }
+            
+            switch result {
+            case .success(let purchases):
+                print("✅ Got \(purchases.count) purchases for \(accountAlias)")
+                
+                for purchase in purchases {
+                    // Check if already seen (thread-safe)
+                    guard !sharedState.hasSeen(purchaseId: purchase.id) else {
+                        continue
+                    }
+                    
+                    sharedState.markAsSeen(purchaseId: purchase.id)
+                    
+                    let merchantName = purchase.description
+                    let date = Self.parseDate(purchase.purchaseDate)
+                    let savedCategory = CategoryStore.shared.getCategory(for: purchase.id)
+                    
+                    let display = PurchaseDisplay(
+                        id: purchase.id,
+                        merchantName: merchantName,
+                        accountAlias: accountAlias,
+                        accountId: account.id,
+                        amount: purchase.amount,
+                        date: date,
+                        rawDescription: purchase.description,
+                        selectedCategory: savedCategory
+                    )
+                    
+                    sharedState.addPurchase(display)
+                }
+                
+            case .failure(let error):
+                print("❌ Error fetching purchases for \(accountAlias): \(error)")
+            }
+        }
+    }
+    
     var totalSpentThisMonth: Double { ledger?.totalSpentThisMonth ?? 0 }
     var budgets: [Budget] { ledger?.budgets ?? [] }
-    func spentByCategoryThisMonth() -> [(name: String, amount: Double)] { ledger?.spentByCategoryThisMonth() ?? [] }
+    
+    // MARK: - Purchase Filtering (con filtro de mes)
+    
+    /// Retorna las compras de una cuenta específica filtradas por el mes seleccionado
+    func purchasesForAccount(_ accountId: String) -> [PurchaseDisplay] {
+        guard let monthSelector = self.monthSelector else {
+            // Fallback: retornar todas las compras sin filtrar
+            return apiPurchases.filter { $0.accountId == accountId }.sorted(by: { $0.date > $1.date })
+        }
+        
+        let monthInterval = monthSelector.monthInterval
+        
+        return apiPurchases
+            .filter { purchase in
+                purchase.accountId == accountId && monthInterval.contains(purchase.date)
+            }
+            .sorted(by: { $0.date > $1.date })
+    }
+    
+    /// Versión unificada para checking accounts, también filtrada por mes
+    func purchasesForAccountUnified(_ accountId: String) -> [PurchaseDisplay] {
+        guard let monthSelector = self.monthSelector else {
+            // Fallback: retornar todas las compras sin filtrar
+            return apiPurchases.filter { $0.accountId == accountId }.sorted(by: { $0.date > $1.date })
+        }
+        
+        let monthInterval = monthSelector.monthInterval
+        
+        return apiPurchases
+            .filter { purchase in
+                purchase.accountId == accountId && monthInterval.contains(purchase.date)
+            }
+            .sorted(by: { $0.date > $1.date })
+    }
+    
+    /// Retorna gastos agrupados por categoría para el mes seleccionado
+    func spentByCategoryThisMonth() -> [(name: String, amount: Double)] {
+        guard let ledger = self.ledger, let monthSelector = self.monthSelector else {
+            return []
+        }
+        
+        let monthInterval = monthSelector.monthInterval
+        
+        var dict: [String: Double] = [:]
+        
+        // Filtrar solo transacciones del mes seleccionado
+        ledger.transactions
+            .filter { tx in
+                tx.kind == .expense && monthInterval.contains(tx.date)
+            }
+            .forEach { tx in
+                let cat = tx.category.isEmpty ? "Other" : tx.category
+                dict[cat, default: 0] += tx.amount
+            }
+        
+        return dict.map { (name: $0.key, amount: $0.value) }
+            .sorted { $0.amount > $1.amount }
+    }
+    
     func usedForBudget(_ name: String) -> Double { ledger?.usedForBudget(name) ?? 0 }
     
     // Purchases for all checking accounts (using API purchases already fetched)
@@ -94,147 +299,6 @@ final class ExpensesViewModel: ObservableObject {
         return list
     }
     
-    func refreshData() {
-        print("🔄 ExpensesVM: Manual refresh triggered")
-        fetchPurchasesFromAPI()
-        fetchCreditCardDebt()
-    }
-    
-    func fetchPurchasesFromAPI() {
-        let apiKey = AuthStore.shared.readApiKey() ?? LocalSecrets.nessieApiKey
-        let customerId = AuthStore.shared.readCustomerId() ?? LocalSecrets.nessieCustomerId
-        
-        print("🔍 ExpensesVM: Fetching purchases for customer: \(customerId)")
-        
-        isLoadingPurchases = true
-        
-        // First fetch accounts
-        NessieService.shared.fetchAccounts(forCustomerId: customerId, apiKey: apiKey) { [weak self] result in
-            switch result {
-            case .success(let accounts):
-                print("✅ ExpensesVM: Got \(accounts.count) accounts")
-                var allPurchases: [PurchaseDisplay] = []
-                let group = DispatchGroup()
-                var seenPurchaseIds = Set<String>()
-                
-                for account in accounts {
-                    group.enter()
-                    let accountAlias = account.nickname.isEmpty ? account.type : account.nickname
-                    
-                    print("🔍 Fetching purchases for account: \(accountAlias) (\(account.id))")
-                    
-                    // Fetch purchases for this account
-                    NessieService.shared.fetchPurchases(forAccountId: account.id, apiKey: apiKey) { pResult in
-                        defer { group.leave() }
-                        
-                        switch pResult {
-                        case .success(let purchases):
-                            print("✅ Got \(purchases.count) purchases for \(accountAlias)")
-                            for purchase in purchases {
-                                let merchantGroup = DispatchGroup()
-                                merchantGroup.enter()
-                                
-                                var merchantName = purchase.description
-                                
-                                if !purchase.merchantId.isEmpty {
-                                    NessieService.shared.fetchMerchant(forId: purchase.merchantId, apiKey: apiKey) { mResult in
-                                        if case .success(let merchant) = mResult {
-                                            merchantName = merchant.name
-                                        }
-                                        merchantGroup.leave()
-                                    }
-                                    merchantGroup.wait()
-                                } else {
-                                    merchantGroup.leave()
-                                }
-                                
-                                let date = Self.parseDate(purchase.purchaseDate)
-                                let savedCategory = CategoryStore.shared.getCategory(for: purchase.id)
-                                guard !seenPurchaseIds.contains(purchase.id) else { continue }
-                                seenPurchaseIds.insert(purchase.id)
-                                let display = PurchaseDisplay(
-                                    id: purchase.id,
-                                    merchantName: merchantName,
-                                    accountAlias: accountAlias,
-                                    accountId: account.id,
-                                    amount: purchase.amount,
-                                    date: date,
-                                    rawDescription: purchase.description,
-                                    selectedCategory: savedCategory
-                                )
-                                allPurchases.append(display)
-                            }
-                        case .failure(let error):
-                            print("❌ Error fetching purchases for \(accountAlias): \(error)")
-                        }
-                    }
-                }
-
-                // ALWAYS fetch for configured checking account override (even if it's in the list)
-                let checkingOverride = LocalSecrets.nessieCheckingAccountId
-                print("🏦 Checking override ID from config: '\(checkingOverride)'")
-                
-                if !checkingOverride.isEmpty {
-                    group.enter()
-                    let alias = "BBVA Nómina"
-                    print("🔍 EXPLICIT Fetching purchases for checking account id: \(checkingOverride)")
-                    print("🌐 URL: http://api.nessieisreal.com/accounts/\(checkingOverride)/purchases?key=...")
-                    
-                    NessieService.shared.fetchPurchases(forAccountId: checkingOverride, apiKey: apiKey) { pResult in
-                        defer { group.leave() }
-                        switch pResult {
-                        case .success(let purchases):
-                            print("✅ SUCCESS: Got \(purchases.count) purchases for checking override")
-                            for purchase in purchases {
-                                var merchantName = purchase.description
-                                if !purchase.merchantId.isEmpty {
-                                    let sem = DispatchSemaphore(value: 0)
-                                    NessieService.shared.fetchMerchant(forId: purchase.merchantId, apiKey: apiKey) { mResult in
-                                        if case .success(let merchant) = mResult { merchantName = merchant.name }
-                                        sem.signal()
-                                    }
-                                    sem.wait()
-                                }
-                                let date = Self.parseDate(purchase.purchaseDate)
-                                guard !seenPurchaseIds.contains(purchase.id) else {
-                                    print("⚠️ Skipping duplicate purchase: \(purchase.id)")
-                                    continue
-                                }
-                                seenPurchaseIds.insert(purchase.id)
-                                let display = PurchaseDisplay(
-                                    id: purchase.id,
-                                    merchantName: merchantName,
-                                    accountAlias: alias,
-                                    accountId: checkingOverride,
-                                    amount: purchase.amount,
-                                    date: date,
-                                    rawDescription: purchase.description,
-                                    selectedCategory: CategoryStore.shared.getCategory(for: purchase.id)
-                                )
-                                allPurchases.append(display)
-                                print("➕ Added purchase: \(merchantName) - $\(purchase.amount)")
-                            }
-                        case .failure(let error):
-                            print("❌ ERROR fetching explicit checking purchases: \(error)")
-                        }
-                    }
-                }
-                
-                group.notify(queue: .main) {
-                    self?.apiPurchases = allPurchases.sorted { $0.date > $1.date }
-                    self?.isLoadingPurchases = false
-                    print("✅ Total purchases loaded: \(allPurchases.count)")
-                }
-                
-            case .failure(let error):
-                print("❌ ExpensesVM: Error fetching accounts: \(error)")
-                DispatchQueue.main.async {
-                    self?.isLoadingPurchases = false
-                }
-            }
-        }
-    }
-    
     func fetchCreditCardDebt() {
         let apiKey = AuthStore.shared.readApiKey() ?? LocalSecrets.nessieApiKey
         let customerId = AuthStore.shared.readCustomerId() ?? LocalSecrets.nessieCustomerId
@@ -270,55 +334,6 @@ final class ExpensesViewModel: ObservableObject {
         }
     }
     
-    // Get purchases for a specific account
-    func purchasesForAccount(_ accountId: String) -> [PurchaseDisplay] {
-        apiPurchases.filter { $0.accountId == accountId }
-    }
-
-    // Unified purchases for an account: prefer API list; if empty, fallback to ledger transactions
-    func purchasesForAccountUnified(_ accountId: String) -> [PurchaseDisplay] {
-        print("🔎 purchasesForAccountUnified called for accountId: \(accountId)")
-        let api = purchasesForAccount(accountId)
-        print("📦 API purchases for \(accountId): \(api.count)")
-        
-        if !api.isEmpty {
-            print("✅ Returning \(api.count) API purchases")
-            return api
-        }
-
-        print("⚠️ No API purchases, trying ledger fallback...")
-        guard let ledger = ledger else {
-            print("❌ No ledger available for fallback")
-            return []
-        }
-        
-        var alias = ledger.accounts.first(where: { $0.id == accountId })
-            .map { $0.nickname.isEmpty ? $0.type : $0.nickname } ?? "Account"
-        if accountId == LocalSecrets.nessieCheckingAccountId && alias == "Account" {
-            alias = "BBVA Nómina"
-        }
-        
-        let txs = ledger.transactions.filter { $0.kind == .expense && $0.accountId == accountId }
-        print("💰 Found \(txs.count) expense transactions in ledger for this account")
-        
-        let mapped: [PurchaseDisplay] = txs.map { tx in
-            let cat = CategoryStore.shared.getCategory(for: tx.purchaseId ?? "")
-            return PurchaseDisplay(
-                id: tx.purchaseId ?? UUID().uuidString,
-                merchantName: tx.title,
-                accountAlias: alias,
-                accountId: accountId,
-                amount: tx.amount,
-                date: tx.date,
-                rawDescription: tx.title,
-                selectedCategory: cat
-            )
-        }.sorted { $0.date > $1.date }
-        
-        print("✅ Returning \(mapped.count) mapped purchases from ledger")
-        return mapped
-    }
-    
     private static func parseDate(_ s: String) -> Date {
         let iso = ISO8601DateFormatter()
         if let d = iso.date(from: s) { return d }
@@ -334,5 +349,36 @@ final class ExpensesViewModel: ObservableObject {
         if let d = short.date(from: s) { return d }
 
         return Date()
+    }
+}
+
+// MARK: - Thread-Safe Shared State Class
+private class PurchasesSharedState {
+    private var purchases: [PurchaseDisplay] = []
+    private var seenIds: Set<String> = []
+    private let lock = NSLock()
+    
+    func hasSeen(purchaseId: String) -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return seenIds.contains(purchaseId)
+    }
+    
+    func markAsSeen(purchaseId: String) {
+        lock.lock()
+        defer { lock.unlock() }
+        seenIds.insert(purchaseId)
+    }
+    
+    func addPurchase(_ purchase: PurchaseDisplay) {
+        lock.lock()
+        defer { lock.unlock() }
+        purchases.append(purchase)
+    }
+    
+    func getAllPurchases() -> [PurchaseDisplay] {
+        lock.lock()
+        defer { lock.unlock() }
+        return purchases
     }
 }

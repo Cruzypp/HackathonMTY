@@ -13,7 +13,7 @@ struct TopSegmentedControl: View {
                 } label: {
                     Text(tab.rawValue)
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(selection == tab ? .white : SwiftFinColor.textSecondary)
+                        .foregroundStyle(selection == tab ? .white : SwiftFinColor.textDark)
                         .padding(.vertical, 8)
                         .padding(.horizontal, 12)
                         .background(
