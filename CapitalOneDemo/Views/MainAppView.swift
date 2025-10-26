@@ -29,6 +29,13 @@ struct MainAppView: View {
                 Label("Overview", systemImage: "chart.pie.fill")
 
             }
+            .overlay(){
+                Image(.captwo)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 50, height: 50)
+                    .offset(x: 0, y: -290)
+            }
             
             // Tab 2: Expenses
             NavigationStack {
@@ -51,6 +58,13 @@ struct MainAppView: View {
             }
             .tag(1)
             .scrollContentBackground(.hidden)
+            .overlay(){
+                Image(.captwo)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 50, height: 50)
+                    .offset(x: 0, y: -290)
+            }
             
             // Tab 3: Income
             NavigationStack {
@@ -72,6 +86,13 @@ struct MainAppView: View {
                 Label("Income", systemImage: "dollarsign.circle.fill")
             }
             .tag(2)
+            .overlay(){
+                Image(.captwo)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 50, height: 50)
+                    .offset(x: -35, y: -290)
+            }
             
             // Tab 4: Chat with FinBot
             NavigationStack {
