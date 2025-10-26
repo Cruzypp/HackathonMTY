@@ -18,7 +18,7 @@ struct MonthSelectionControl: View {
             VStack(spacing: 4) {
                 Text(monthLabel)
                     .font(.headline)
-                    .foregroundStyle(SwiftFinColor.textPrimary)
+                    .foregroundStyle(.white)
                 Text(String(yearLabel))
                     .font(.caption)
                     .foregroundStyle(SwiftFinColor.textSecondary)

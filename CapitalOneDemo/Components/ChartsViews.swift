@@ -65,7 +65,6 @@ struct BarCashFlow: View {
                 }
             }
         }
-        // ✅ Estilo de texto blanco para todo el chart
         .chartXAxis {
             AxisMarks() { _ in
                 AxisGridLine()
@@ -165,6 +164,7 @@ struct BarIncome: View {
         }
         .chartYAxisLabel("USD")
         .chartXAxis {
+            AxisMarks { _ in
                 AxisGridLine()
                     .foregroundStyle(.white.opacity(0.2))
                 AxisValueLabel()
@@ -173,6 +173,7 @@ struct BarIncome: View {
             }
         }
         .chartYAxis {
+            AxisMarks(position: .leading) { _ in
                 AxisGridLine()
                     .foregroundStyle(.white.opacity(0.2))
                 AxisValueLabel()
