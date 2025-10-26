@@ -21,7 +21,7 @@ struct OverviewScreen: View {
                             .foregroundStyle(checkingBalanceThisMonth >= 0 ? SwiftFinColor.positiveGreen : SwiftFinColor.negativeRed)
                     }
                 }
-                .frame(width: 360, height: 50)
+                .frame(width: 367, height: 50)
             }
 
             // Total gastado este mes en tarjetas de crédito - CALCULADO DIRECTAMENTE
@@ -34,7 +34,7 @@ struct OverviewScreen: View {
                         .font(.system(size: 28, weight: .bold))
                         .foregroundStyle(Color.white)
                 }
-                .frame(width: 360, height: 50)
+                .frame(width: 367, height: 50)
             }
 
             Card {

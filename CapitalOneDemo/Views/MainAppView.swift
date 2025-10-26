@@ -22,6 +22,7 @@ struct MainAppView: View {
                     }
                 }
                 .navigationTitle("Overview")
+                .padding()
                 .navigationBarTitleDisplayMode(.large)
             }
             .tabItem {
@@ -49,6 +50,7 @@ struct MainAppView: View {
                 Label("Expenses", systemImage: "creditcard.fill")
             }
             .tag(1)
+            .scrollContentBackground(.hidden)
             
             // Tab 3: Income
             NavigationStack {
@@ -76,7 +78,7 @@ struct MainAppView: View {
                 ChatView()
             }
             .tabItem {
-                Label("FinBot", systemImage: "brain.head.profile")
+                Label("FinBot", systemImage: "sparkles")
             }
             .tag(3)
         }

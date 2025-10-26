@@ -73,7 +73,7 @@ struct ChatView: View {
                     VStack(spacing: 10) {
                         Text(isRecording ? "Escuchando…" : "Toca el micrófono para hablar")
                             .font(.caption)
-                            .foregroundStyle(SwiftFinColor.textSecondary)
+                            .foregroundStyle(Color.white)
 
                         if isRecording && !liveTranscript.isEmpty {
                             Text(liveTranscript)
@@ -118,12 +118,14 @@ struct ChatView: View {
                 } else {
                     // ======= MODO TEXTO =======
                     HStack(spacing: 12) {
-                        TextField("Ask FinBot... (e.g., 'What is inflation?')",
-                                  text: $textInput, axis: .vertical)
+                        TextField("", text: $textInput, prompt:
+                                    Text("Ask FinBot...")
+                            .foregroundStyle(.white), axis: .vertical // 1. Placeholder blanco
+                        )
                             .lineLimit(3)
                             .padding(12)
-                            .foregroundStyle(SwiftFinColor.textPrimary)
                             .tint(SwiftFinColor.accentBlue)
+                            .foregroundStyle(.white) // 2. Texto de entrada (tipeado) blanco
                             .background(
                                 ZStack {
                                     RoundedRectangle(cornerRadius: 20)
