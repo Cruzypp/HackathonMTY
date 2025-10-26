@@ -16,9 +16,12 @@ struct OverviewScreen: View {
             Card {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Total Checking Balance").foregroundStyle(SwiftFinColor.textSecondary).font(.caption)
+                        Text("Total Checking Balance")
+                            .foregroundStyle(SwiftFinColor.textDarkSecondary)
+                            .font(.caption)
                         Text(String(format: "$%.2f USD", vm.checkingBalanceThisMonth))
                             .font(.system(size: 28, weight: .bold))
+                            .foregroundStyle(SwiftFinColor.textDark)
                     }
                 }
                 .frame(width: 360, height: 50)
@@ -28,9 +31,12 @@ struct OverviewScreen: View {
             // Total gastado este mes en tarjetas de crédito
             Card {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Total spend this month (Credit Cards)").foregroundStyle(SwiftFinColor.textSecondary).font(.caption)
+                    Text("Total spend this month (Credit Cards)")
+                        .foregroundStyle(SwiftFinColor.textDarkSecondary)
+                        .font(.caption)
                     Text(String(format: "$%.2f", totalCreditCardSpentThisMonth))
                         .font(.system(size: 28, weight: .bold))
+                        .foregroundStyle(SwiftFinColor.negativeRed)
                 }
                 .frame(width: 360, height: 50)
             }
@@ -50,7 +56,9 @@ struct OverviewScreen: View {
     }
 
             Card {
-                Text("Cash Flow (Jan–Oct)").font(.headline)
+                Text("Cash Flow (Jan–Oct)")
+                    .font(.headline)
+                    .foregroundStyle(SwiftFinColor.textDark)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 BarCashFlow()
                     .frame(height: 180)
