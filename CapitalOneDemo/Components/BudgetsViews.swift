@@ -54,11 +54,11 @@ struct BudgetRow: View {
                 Text(name)
                     .font(.subheadline)
                     .fontWeight(.medium)
-                    .foregroundStyle(SwiftFinColor.textDark) // Blanco
+                    .foregroundStyle(SwiftFinColor.textPrimary) // Oscuro para fondo claro
                 Spacer()
                 Text(String(format: "$%.0f / $%.0f", spent, total))
                     .font(.subheadline)
-                    .foregroundStyle(SwiftFinColor.textDarkSecondary) // Gris claro
+                    .foregroundStyle(SwiftFinColor.textSecondary) // Gris oscuro para fondo claro
             }
 
             // Progress Bar con efecto glass
@@ -146,7 +146,7 @@ struct BudgetRow: View {
                         Text(String(format: "$%.0f Remaining", remaining))
                             .font(.caption)
                     }
-                    .foregroundStyle(SwiftFinColor.textDarkSecondary) // Gris claro para card oscura
+                    .foregroundStyle(SwiftFinColor.textSecondary) // Gris oscuro para fondo claro
                 }
                 Spacer()
             }

@@ -15,6 +15,7 @@ struct ContentView: View {
                         insertion: .move(edge: .trailing).combined(with: .opacity),
                         removal: .move(edge: .leading).combined(with: .opacity)
                     ))
+                    .preferredColorScheme(.light)
             } else {
                 // 3. Si no, muestra la pantalla de Login
                 LoginView(isLoggedIn: $isLoggedIn)

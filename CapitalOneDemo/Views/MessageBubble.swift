@@ -8,7 +8,7 @@ struct MessageBubble: View {
     var body: some View {
         HStack(alignment: .bottom, spacing: 8) {
             if message.isFromUser {
-                Spacer(minLength: 60) // Empuja la burbuja del usuario a la derecha
+                Spacer(minLength: 60)
             } else {
                 // Avatar del bot con efecto glass
                 ZStack {
@@ -33,7 +33,7 @@ struct MessageBubble: View {
                         )
                         .frame(width: 32, height: 32)
                     
-                    Image(systemName: "brain.head.profile")
+                    Image(systemName: "waveform.and.person.filled")
                         .font(.system(size: 16))
                         .foregroundStyle(SwiftFinColor.accentBlue)
                 }
@@ -41,41 +41,35 @@ struct MessageBubble: View {
             
 
             VStack(alignment: message.isFromUser ? .trailing : .leading, spacing: 4) {
-                Text(message.text)
+                Text(.init(message.text))
                     .padding(12)
                     .background(
                         ZStack {
-                            // Fondo base
-                            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                .fill(
-                                    message.isFromUser ?
-                                        LinearGradient(
-                                            colors: [SwiftFinColor.accentBlue, Color(hex: "#00559A")],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        ) :
-                                        LinearGradient(
-                                            colors: [SwiftFinColor.surface, SwiftFinColor.surfaceAlt],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
-                                )
-                            
-                            // Efecto glass overlay
+                            // Fondo blanco con leve transparencia
                             RoundedRectangle(cornerRadius: 20, style: .continuous)
                                 .fill(
                                     LinearGradient(
-                                        colors: [.white.opacity(message.isFromUser ? 0.2 : 0.05), .clear],
+                                        colors: [Color.white.opacity(0.9), Color.white.opacity(0.85)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                            
+                            // Overlay glass sutil
+                            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [.white.opacity(0.2), .clear],
                                         startPoint: .top,
                                         endPoint: .bottom
                                     )
                                 )
                             
-                            // Borde sutil
+                            // Borde suave
                             RoundedRectangle(cornerRadius: 20, style: .continuous)
                                 .stroke(
                                     LinearGradient(
-                                        colors: [.white.opacity(0.2), .white.opacity(0.05)],
+                                        colors: [.white.opacity(0.4), .white.opacity(0.1)],
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
                                     ),
@@ -83,27 +77,26 @@ struct MessageBubble: View {
                                 )
                         }
                     )
-                    .foregroundStyle(message.isFromUser ? .white : SwiftFinColor.textPrimary)
+                    // Texto oscuro sobre fondo blanco
+                    .foregroundStyle(Color.black)
                     .shadow(
-                        color: message.isFromUser ? 
-                            SwiftFinColor.accentBlue.opacity(0.3) : 
-                            .black.opacity(0.1),
-                        radius: 8,
-                        y: 4
+                        color: .black.opacity(0.1),
+                        radius: 6,
+                        y: 3
                     )
                 
                 // Timestamp
                 Text(message.timestamp, style: .time)
                     .font(.caption2)
-                    .foregroundStyle(SwiftFinColor.textSecondary)
+                    .foregroundStyle(.gray)
                     .padding(.horizontal, 4)
             }
             .frame(maxWidth: 280, alignment: message.isFromUser ? .trailing : .leading)
             
             if !message.isFromUser {
-                Spacer(minLength: 60) // Empuja la burbuja del bot a la izquierda
+                Spacer(minLength: 60)
             } else {
-                // Avatar del usuario con efecto glass - Capital One Red
+                // Avatar del usuario (Capital One Red)
                 ZStack {
                     Circle()
                         .fill(

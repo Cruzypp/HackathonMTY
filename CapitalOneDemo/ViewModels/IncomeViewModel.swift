@@ -22,6 +22,9 @@ final class IncomeViewModel: ObservableObject {
     @Published var apiPurchases: [PurchaseDisplay] = []
     @Published var isLoadingTransactions: Bool = false
 
+    private var lastFetchTime: Date?
+    private let cacheDuration: TimeInterval = 180
+    
     func configure(ledger: LedgerViewModel, monthSelector: MonthSelector) {
         guard self.ledger == nil else { 
             print("⚠️ IncomeVM: Already configured")
@@ -32,27 +35,23 @@ final class IncomeViewModel: ObservableObject {
             .sink { [weak self] _ in self?.objectWillChange.send() }
             .store(in: &cancellables)
         
-        print("🚀 IncomeVM: Configuring and fetching checking data from API...")
-        
-        // Fetch checking balance, deposits, and purchases from API
-        fetchCheckingBalance()
-        fetchCheckingTransactions()
+        if shouldRefresh() {
+            print("🚀 IncomeVM: Configuring and fetching checking data from API...")
+            fetchCheckingBalance()
+            fetchCheckingTransactions()
+        } else {
+            print("✅ IncomeVM: Using cached data")
+        }
     }
-
-    var totalIncomeThisMonth: Double { ledger?.totalIncomeThisMonth ?? 0 }
-    var incomeThisMonth: [Tx] { ledger?.incomeThisMonth ?? [] }
     
-    // Total expenses this month from ledger
-    var totalExpensesThisMonth: Double { ledger?.totalSpentThisMonth ?? 0 }
-    var expensesThisMonth: [Tx] { ledger?.expensesThisMonth ?? [] }
-    
-    // Net = Income - Expenses
-    var netThisMonth: Double {
-        totalIncomeThisMonth - totalExpensesThisMonth
+    private func shouldRefresh() -> Bool {
+        guard let lastTime = lastFetchTime else { return true }
+        return Date().timeIntervalSince(lastTime) > cacheDuration
     }
     
     func refreshData() {
         print("🔄 IncomeVM: Manual refresh triggered")
+        lastFetchTime = nil
         fetchCheckingBalance()
         fetchCheckingTransactions()
     }
@@ -119,189 +118,149 @@ final class IncomeViewModel: ObservableObject {
     }
     
     func fetchCheckingTransactions() {
+        guard !isLoadingTransactions else {
+            print("⚠️ IncomeVM: Already loading transactions")
+            return
+        }
+        
         let apiKey = AuthStore.shared.readApiKey() ?? LocalSecrets.nessieApiKey
         let customerId = AuthStore.shared.readCustomerId() ?? LocalSecrets.nessieCustomerId
         
         print("🔍 IncomeVM: Fetching checking transactions for customer: \(customerId)")
         
         isLoadingTransactions = true
+        lastFetchTime = Date()
         
         NessieService.shared.fetchAccounts(forCustomerId: customerId, apiKey: apiKey) { [weak self] result in
             switch result {
             case .success(let accounts):
                 print("✅ IncomeVM: Got \(accounts.count) accounts for transactions")
-                var allDeposits: [DepositDisplay] = []
-                var allPurchases: [PurchaseDisplay] = []
-                let group = DispatchGroup()
-                var seenDepositIds = Set<String>()
-                var seenPurchaseIds = Set<String>()
                 
-                // Filter checking accounts
+                // OPTIMIZACIÓN: Usar clase wrapper para estado compartido thread-safe
+                let sharedState = TransactionsSharedState()
+                let dispatchQueue = DispatchQueue(label: "com.swiftfin.income", attributes: .concurrent)
+                let group = DispatchGroup()
+                
                 let checkingAccounts = accounts.filter { $0.type.lowercased().contains("checking") }
                 
                 for account in checkingAccounts {
-                    let accountAlias = account.nickname.isEmpty ? account.type : account.nickname
-                    
-                    // Fetch deposits
                     group.enter()
-                    NessieService.shared.fetchDeposits(forAccountId: account.id, apiKey: apiKey) { dResult in
-                        defer { group.leave() }
-                        switch dResult {
-                        case .success(let deposits):
-                            print("✅ IncomeVM: Got \(deposits.count) deposits for \(accountAlias)")
-                            for deposit in deposits {
-                                guard !seenDepositIds.contains(deposit.id) else { continue }
-                                seenDepositIds.insert(deposit.id)
-                                let date = Self.parseDate(deposit.transaction_date)
-                                let display = DepositDisplay(
-                                    id: deposit.id,
-                                    description: deposit.description,
-                                    accountAlias: accountAlias,
-                                    accountId: account.id,
-                                    amount: deposit.amount,
-                                    date: date,
-                                    medium: deposit.medium
-                                )
-                                allDeposits.append(display)
-                            }
-                        case .failure(let error):
-                            print("❌ IncomeVM: Error fetching deposits for \(accountAlias): \(error)")
-                        }
-                    }
-                    
-                    // Fetch purchases
-                    group.enter()
-                    NessieService.shared.fetchPurchases(forAccountId: account.id, apiKey: apiKey) { pResult in
-                        defer { group.leave() }
-                        switch pResult {
-                        case .success(let purchases):
-                            print("✅ IncomeVM: Got \(purchases.count) purchases for \(accountAlias)")
-                            for purchase in purchases {
-                                guard !seenPurchaseIds.contains(purchase.id) else { continue }
-                                seenPurchaseIds.insert(purchase.id)
-                                
-                                var merchantName = purchase.description
-                                if !purchase.merchantId.isEmpty {
-                                    let sem = DispatchSemaphore(value: 0)
-                                    NessieService.shared.fetchMerchant(forId: purchase.merchantId, apiKey: apiKey) { mResult in
-                                        if case .success(let merchant) = mResult {
-                                            merchantName = merchant.name
-                                        }
-                                        sem.signal()
-                                    }
-                                    sem.wait()
-                                }
-                                
-                                let date = Self.parseDate(purchase.purchaseDate)
-                                let display = PurchaseDisplay(
-                                    id: purchase.id,
-                                    merchantName: merchantName,
-                                    accountAlias: accountAlias,
-                                    accountId: account.id,
-                                    amount: purchase.amount,
-                                    date: date,
-                                    rawDescription: purchase.description,
-                                    selectedCategory: CategoryStore.shared.getCategory(for: purchase.id)
-                                )
-                                allPurchases.append(display)
-                            }
-                        case .failure(let error):
-                            print("❌ IncomeVM: Error fetching purchases for \(accountAlias): \(error)")
+                    dispatchQueue.async {
+                        self?.processTransactionsForAccount(
+                            account,
+                            apiKey: apiKey,
+                            sharedState: sharedState
+                        ) {
+                            group.leave()
                         }
                     }
                 }
                 
-                // ALWAYS fetch for configured checking account override
+                // Override account
                 let checkingOverride = LocalSecrets.nessieCheckingAccountId
                 if !checkingOverride.isEmpty {
-                    let alias = "BBVA Nómina"
-                    
-                    // Fetch deposits for override
                     group.enter()
-                    print("🔍 IncomeVM: EXPLICIT Fetching deposits for checking override: \(checkingOverride)")
-                    NessieService.shared.fetchDeposits(forAccountId: checkingOverride, apiKey: apiKey) { dResult in
-                        defer { group.leave() }
-                        switch dResult {
-                        case .success(let deposits):
-                            print("✅ IncomeVM: Got \(deposits.count) deposits for checking override")
-                            for deposit in deposits {
-                                guard !seenDepositIds.contains(deposit.id) else { continue }
-                                seenDepositIds.insert(deposit.id)
-                                let date = Self.parseDate(deposit.transaction_date)
-                                let display = DepositDisplay(
-                                    id: deposit.id,
-                                    description: deposit.description,
-                                    accountAlias: alias,
-                                    accountId: checkingOverride,
-                                    amount: deposit.amount,
-                                    date: date,
-                                    medium: deposit.medium
-                                )
-                                allDeposits.append(display)
-                            }
-                        case .failure(let error):
-                            print("❌ IncomeVM: Error fetching deposits for override: \(error)")
-                        }
-                    }
-                    
-                    // Fetch purchases for override
-                    group.enter()
-                    print("🔍 IncomeVM: EXPLICIT Fetching purchases for checking override: \(checkingOverride)")
-                    NessieService.shared.fetchPurchases(forAccountId: checkingOverride, apiKey: apiKey) { pResult in
-                        defer { group.leave() }
-                        switch pResult {
-                        case .success(let purchases):
-                            print("✅ IncomeVM: Got \(purchases.count) purchases for checking override")
-                            for purchase in purchases {
-                                guard !seenPurchaseIds.contains(purchase.id) else { continue }
-                                seenPurchaseIds.insert(purchase.id)
-                                
-                                var merchantName = purchase.description
-                                if !purchase.merchantId.isEmpty {
-                                    let sem = DispatchSemaphore(value: 0)
-                                    NessieService.shared.fetchMerchant(forId: purchase.merchantId, apiKey: apiKey) { mResult in
-                                        if case .success(let merchant) = mResult {
-                                            merchantName = merchant.name
-                                        }
-                                        sem.signal()
-                                    }
-                                    sem.wait()
-                                }
-                                
-                                let date = Self.parseDate(purchase.purchaseDate)
-                                let display = PurchaseDisplay(
-                                    id: purchase.id,
-                                    merchantName: merchantName,
-                                    accountAlias: alias,
-                                    accountId: checkingOverride,
-                                    amount: purchase.amount,
-                                    date: date,
-                                    rawDescription: purchase.description,
-                                    selectedCategory: CategoryStore.shared.getCategory(for: purchase.id)
-                                )
-                                allPurchases.append(display)
-                            }
-                        case .failure(let error):
-                            print("❌ IncomeVM: Error fetching purchases for override: \(error)")
+                    let account = Account(
+                        id: checkingOverride,
+                        type: "Checking",
+                        nickname: "BBVA Nómina",
+                        rewards: 0,
+                        balance: 0,
+                        accountNumber: "",
+                        customerId: customerId
+                    )
+                    dispatchQueue.async {
+                        self?.processTransactionsForAccount(
+                            account,
+                            apiKey: apiKey,
+                            sharedState: sharedState
+                        ) {
+                            group.leave()
                         }
                     }
                 }
                 
                 group.notify(queue: .main) {
-                    self?.apiDeposits = allDeposits.sorted { $0.date > $1.date }
-                    self?.apiPurchases = allPurchases.sorted { $0.date > $1.date }
+                    self?.apiDeposits = sharedState.getAllDeposits().sorted { $0.date > $1.date }
+                    self?.apiPurchases = sharedState.getAllPurchases().sorted { $0.date > $1.date }
                     self?.isLoadingTransactions = false
-                    print("✅ IncomeVM: Total deposits loaded: \(allDeposits.count)")
-                    print("✅ IncomeVM: Total purchases loaded: \(allPurchases.count)")
+                    print("✅ IncomeVM: Total deposits: \(sharedState.getAllDeposits().count), purchases: \(sharedState.getAllPurchases().count)")
                 }
                 
             case .failure(let error):
-                print("❌ IncomeVM: Error fetching accounts for transactions: \(error)")
+                print("❌ IncomeVM: Error fetching accounts: \(error)")
                 DispatchQueue.main.async {
                     self?.isLoadingTransactions = false
                 }
             }
         }
+    }
+    
+    private func processTransactionsForAccount(
+        _ account: Account,
+        apiKey: String,
+        sharedState: TransactionsSharedState,
+        completion: @escaping () -> Void
+    ) {
+        let accountAlias = account.nickname.isEmpty ? account.type : account.nickname
+        let group = DispatchGroup()
+        
+        // Fetch deposits
+        group.enter()
+        NessieService.shared.fetchDeposits(forAccountId: account.id, apiKey: apiKey) { result in
+            defer { group.leave() }
+            if case .success(let deps) = result {
+                let displays = deps.map { deposit in
+                    DepositDisplay(
+                        id: deposit.id,
+                        description: deposit.description,
+                        accountAlias: accountAlias,
+                        accountId: account.id,
+                        amount: deposit.amount,
+                        date: Self.parseDate(deposit.transaction_date),
+                        medium: deposit.medium
+                    )
+                }
+                displays.forEach { sharedState.addDeposit($0) }
+            }
+        }
+        
+        // Fetch purchases
+        group.enter()
+        NessieService.shared.fetchPurchases(forAccountId: account.id, apiKey: apiKey) { result in
+            defer { group.leave() }
+            if case .success(let purs) = result {
+                let displays = purs.map { purchase in
+                    PurchaseDisplay(
+                        id: purchase.id,
+                        merchantName: purchase.description,
+                        accountAlias: accountAlias,
+                        accountId: account.id,
+                        amount: purchase.amount,
+                        date: Self.parseDate(purchase.purchaseDate),
+                        rawDescription: purchase.description,
+                        selectedCategory: CategoryStore.shared.getCategory(for: purchase.id)
+                    )
+                }
+                displays.forEach { sharedState.addPurchase($0) }
+            }
+        }
+        
+        group.notify(queue: .global()) {
+            completion()
+        }
+    }
+    
+    var totalIncomeThisMonth: Double { ledger?.totalIncomeThisMonth ?? 0 }
+    var incomeThisMonth: [Tx] { ledger?.incomeThisMonth ?? [] }
+    
+    // Total expenses this month from ledger
+    var totalExpensesThisMonth: Double { ledger?.totalSpentThisMonth ?? 0 }
+    var expensesThisMonth: [Tx] { ledger?.expensesThisMonth ?? [] }
+    
+    // Net = Income - Expenses
+    var netThisMonth: Double {
+        totalIncomeThisMonth - totalExpensesThisMonth
     }
     
     private static func parseDate(_ s: String) -> Date {
@@ -319,5 +278,36 @@ final class IncomeViewModel: ObservableObject {
         if let d = short.date(from: s) { return d }
         
         return Date()
+    }
+}
+
+// MARK: - Thread-Safe Shared State Class
+private class TransactionsSharedState {
+    private var deposits: [DepositDisplay] = []
+    private var purchases: [PurchaseDisplay] = []
+    private let lock = NSLock()
+    
+    func addDeposit(_ deposit: DepositDisplay) {
+        lock.lock()
+        defer { lock.unlock() }
+        deposits.append(deposit)
+    }
+    
+    func addPurchase(_ purchase: PurchaseDisplay) {
+        lock.lock()
+        defer { lock.unlock() }
+        purchases.append(purchase)
+    }
+    
+    func getAllDeposits() -> [DepositDisplay] {
+        lock.lock()
+        defer { lock.unlock() }
+        return deposits
+    }
+    
+    func getAllPurchases() -> [PurchaseDisplay] {
+        lock.lock()
+        defer { lock.unlock() }
+        return purchases
     }
 }

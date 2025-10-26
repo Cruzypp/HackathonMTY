@@ -4,129 +4,55 @@ struct MonthSelectionControl: View {
     @EnvironmentObject var monthSelector: MonthSelector
     
     var body: some View {
-        HStack(spacing: 20) {
-            Button {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    monthSelector.previousMonth()
-                }
-            } label: {
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [SwiftFinColor.surfaceAlt.opacity(0.8), SwiftFinColor.surface],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 36, height: 36)
-                    
-                    Circle()
-                        .stroke(
-                            LinearGradient(
-                                colors: [.white.opacity(0.15), .clear],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1
-                        )
-                        .frame(width: 36, height: 36)
-                    
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(SwiftFinColor.textPrimary)
-                }
-            }
-            .buttonStyle(.plain)
-
-            Spacer()
-            
-            // Etiqueta central con efecto glass premium
-            HStack(spacing: 8) {
-                Image(systemName: "calendar")
-                    .font(.system(size: 14))
+        HStack(spacing: 16) {
+            // Botón anterior
+            Button(action: {
+                monthSelector.previousMonth()
+            }) {
+                Image(systemName: "chevron.left.circle.fill")
+                    .font(.title2)
                     .foregroundStyle(SwiftFinColor.accentBlue)
-                
-                Text(monthSelector.currentMonthYear)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(SwiftFinColor.textPrimary)
             }
-            .padding(.vertical, 10)
-            .padding(.horizontal, 16)
-            .background(
-                ZStack {
-                    Capsule()
-                        .fill(
-                            LinearGradient(
-                                colors: [SwiftFinColor.surfaceAlt.opacity(0.8), SwiftFinColor.surface],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                    
-                    Capsule()
-                        .fill(
-                            LinearGradient(
-                                colors: [.white.opacity(0.05), .clear],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                    
-                    Capsule()
-                        .stroke(
-                            LinearGradient(
-                                colors: [.white.opacity(0.2), .white.opacity(0.05)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1
-                        )
-                }
-            )
-            .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
+            .buttonStyle(PlainButtonStyle())
             
-            Spacer()
-
-            Button {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    monthSelector.nextMonth()
-                }
-            } label: {
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: monthSelector.isCurrentMonth ?
-                                    [SwiftFinColor.surfaceAlt.opacity(0.3), SwiftFinColor.surface.opacity(0.3)] :
-                                    [SwiftFinColor.surfaceAlt.opacity(0.8), SwiftFinColor.surface],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 36, height: 36)
-                    
-                    Circle()
-                        .stroke(
-                            LinearGradient(
-                                colors: [.white.opacity(monthSelector.isCurrentMonth ? 0.05 : 0.15), .clear],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1
-                        )
-                        .frame(width: 36, height: 36)
-                    
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(monthSelector.isCurrentMonth ? SwiftFinColor.textSecondary.opacity(0.5) : SwiftFinColor.textPrimary)
-                }
+            VStack(spacing: 4) {
+                Text(monthLabel)
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                Text(String(yearLabel))
+                    .font(.caption)
+                    .foregroundStyle(SwiftFinColor.textSecondary)
             }
-            .buttonStyle(.plain)
+            .frame(minWidth: 120)
+            
+            // Botón siguiente
+            Button(action: {
+                monthSelector.nextMonth()
+            }) {
+                Image(systemName: "chevron.right.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(SwiftFinColor.accentBlue)
+            }
+            .buttonStyle(PlainButtonStyle())
             .disabled(monthSelector.isCurrentMonth)
         }
+        .padding(.vertical, 12)
         .padding(.horizontal, 16)
-        .padding(.vertical, 8)
+        .background(SwiftFinColor.surface)
+        .cornerRadius(12)
+        .shadow(color: SwiftFinColor.textSecondary.opacity(0.1), radius: 4)
+    }
+    
+    // Computed properties usando monthSelector.selectedDate
+    private var monthLabel: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM"
+        return formatter.string(from: monthSelector.selectedDate)
+    }
+    
+    private var yearLabel: Int {
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.year], from: monthSelector.selectedDate)
+        return components.year ?? 2024
     }
 }

@@ -33,6 +33,12 @@ final class MonthSelector: ObservableObject {
 
 // MARK: - Ledger ViewModel (formerly LedgerStore)
 final class LedgerViewModel: ObservableObject {
+    // Resumen financiero para el contexto del chat
+    var financialSummary: String {
+        transactions.map {
+            "\($0.date): \($0.title) - \($0.category) - $\($0.amount)"
+        }.joined(separator: "\n")
+    }
     // Suma de saldos de cuentas checking (mock: suma de ingresos menos gastos si no hay cuentas reales)
     var checkingBalanceThisMonth: Double {
         // Si tienes cuentas reales, aquí deberías sumar solo las de tipo "checking".

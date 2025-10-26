@@ -42,7 +42,7 @@ enum SwiftFinColor {
     // Accent Colors - Capital One Palette
     static let accentBlue      = Color(hex: "#0099DD")      // Capital One Bright Blue
     static let capitalOneRed   = Color(hex: "#D92228")      // Capital One Red (primary brand)
-    static let positiveGreen   = Color(hex: "#00856A")      // Capital One Teal/Green
+    static let positiveGreen   = Color(hex: "#10B981")      // Verde más brillante y claro
     static let negativeRed     = Color(hex: "#D92228")      // Capital One Red
     
     // Dividers and Borders
@@ -69,7 +69,6 @@ struct SwiftFinDemoApp: App {
             ContentView()
                 .environmentObject(ledger)
                 .environmentObject(monthSelector)
-                .preferredColorScheme(.dark)
         }
     }
 }
