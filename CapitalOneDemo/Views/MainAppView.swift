@@ -23,19 +23,11 @@ struct MainAppView: View {
                 }
                 .navigationTitle("Overview")
                 .navigationBarTitleDisplayMode(.large)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        NavigationLink(destination: DebugAPIView()) {
-                            Image(systemName: "ant.circle")
-                                .foregroundStyle(SwiftFinColor.textSecondary)
-                        }
-                    }
-                }
             }
             .tabItem {
                 Label("Overview", systemImage: "chart.pie.fill")
+
             }
-            .tag(0)
             
             // Tab 2: Expenses
             NavigationStack {
@@ -108,5 +100,4 @@ struct MainAppView: View {
     MainAppView()
         .environmentObject(PreviewMocks.ledger)
         .environmentObject(PreviewMocks.monthSelector)
-        .preferredColorScheme(.dark)
 }

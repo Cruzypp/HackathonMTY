@@ -9,10 +9,13 @@ struct LegendSimple: View {
             ForEach(items.indices, id: \.self) { i in
                 HStack {
                     Circle().fill(palette[i % palette.count]).frame(width: 10, height: 10)
-                    Text(items[i].name).font(.caption)
+                    Text(items[i].name)
+                        .font(.caption)
+                        .foregroundStyle(SwiftFinColor.textDark)
                     Spacer()
                     Text(String(format: "$%.0f", items[i].amount))
-                        .font(.caption).foregroundStyle(SwiftFinColor.textSecondary)
+                        .font(.caption)
+                        .foregroundStyle(SwiftFinColor.textDarkSecondary)
                 }
             }
         }

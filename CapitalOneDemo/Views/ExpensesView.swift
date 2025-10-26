@@ -59,7 +59,7 @@ struct ExpensesScreen: View {
                         Text("Total Spent (This Month)")
                             .foregroundStyle(SwiftFinColor.textDarkSecondary)
                             .font(.caption)
-                        Text(String(format: "$%.2f", vm.totalSpentThisMonth))
+                        Text(String(format: "$%.2f", totalSpentThisMonth))
                             .font(.system(size: 28, weight: .bold))
                             .foregroundStyle(SwiftFinColor.textDark)
                     }
@@ -133,10 +133,20 @@ struct ExpensesScreen: View {
         }
         .onAppear {
             vm.configure(ledger: ledger, monthSelector: monthSelector)
-            // Force a refresh to ensure API purchases (including checking override) are fetched
+            vm.refreshData()
+        }
+        .onChange(of: monthSelector.monthInterval) { _ in
             vm.refreshData()
         }
         } // Closing NavigationStack
+    }
+    
+    // Computed property para total gastado este mes
+    private var totalSpentThisMonth: Double {
+        let monthInterval = monthSelector.monthInterval
+        return ledger.transactions.filter { tx in
+            tx.kind == .expense && monthInterval.contains(tx.date)
+        }.reduce(0) { $0 + $1.amount }
     }
 }
 
@@ -445,7 +455,7 @@ struct CreditCardContent: View {
             // Header de la card con alias de la tarjeta
             HStack {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(card.accountName) // Este es el alias de la tarjeta (BBVA Oro, Banamex Platinum)
+                    Text(card.accountName)
                         .font(.title2)
                         .fontWeight(.bold)
                         .foregroundStyle(SwiftFinColor.textDark)
@@ -469,10 +479,10 @@ struct CreditCardContent: View {
             
             Divider()
             
-            // Compras recientes de la tarjeta específica
+            // Compras recientes de la tarjeta específica (FILTRADAS POR MES)
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Text("Recent Purchases")
+                    Text("Purchases (This Month)")
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundStyle(SwiftFinColor.textDark)
@@ -558,18 +568,18 @@ struct CreditCardPurchaseRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(purchase.merchantName)
                     .font(.subheadline)
-                    .foregroundStyle(SwiftFinColor.textPrimary)
+                    .foregroundStyle(SwiftFinColor.textDark)
                     .lineLimit(1)
                 
                 HStack(spacing: 4) {
                     Text(purchase.date.formatted(date: .abbreviated, time: .omitted))
                         .font(.caption)
-                        .foregroundStyle(SwiftFinColor.textSecondary)
+                        .foregroundStyle(SwiftFinColor.textDarkSecondary)
                     
                     if let category = purchase.selectedCategory, category != "-" {
                         Text("•")
                             .font(.caption)
-                            .foregroundStyle(SwiftFinColor.textSecondary)
+                            .foregroundStyle(SwiftFinColor.textDarkSecondary)
                         
                         Image(systemName: category.categoryIcon)
                             .font(.caption)
@@ -581,7 +591,7 @@ struct CreditCardPurchaseRow: View {
                     } else {
                         Text("•")
                             .font(.caption)
-                            .foregroundStyle(SwiftFinColor.textSecondary)
+                            .foregroundStyle(SwiftFinColor.textDarkSecondary)
                         Image(systemName: "tag")
                             .font(.caption2)
                             .foregroundStyle(SwiftFinColor.textSecondary)
@@ -617,17 +627,17 @@ struct PurchaseRow: View {
                     .frame(width: 36, height: 36)
                 Image(systemName: "cart.fill")
                     .font(.caption)
-                    .foregroundStyle(SwiftFinColor.textSecondary)
+                    .foregroundStyle(SwiftFinColor.textDark)
             }
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(purchase.merchantName)
                     .font(.subheadline)
-                    .foregroundStyle(SwiftFinColor.textPrimary)
+                    .foregroundStyle(SwiftFinColor.textDark)
                     .lineLimit(1)
                 Text(purchase.date.formatted(date: .abbreviated, time: .omitted))
                     .font(.caption)
-                    .foregroundStyle(SwiftFinColor.textSecondary)
+                    .foregroundStyle(SwiftFinColor.textDarkSecondary)
             }
             
             Spacer()
@@ -651,7 +661,9 @@ struct CheckingAccountsPurchasesCarousel: View {
         Card {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
-                    Text("Checking Account Purchases").font(.headline)
+                    Text("Checking Account Purchases")
+                        .font(.headline)
+                        .foregroundStyle(SwiftFinColor.textDark)
                     Spacer()
                     if isLoadingPurchases { ProgressView().scaleEffect(0.8) }
                 }
@@ -662,7 +674,7 @@ struct CheckingAccountsPurchasesCarousel: View {
                         HStack(spacing: 8) {
                             ForEach(0..<accounts.count, id: \.self) { index in
                                 Circle()
-                                    .fill(index == currentIndex ? SwiftFinColor.textPrimary : SwiftFinColor.textSecondary.opacity(0.3))
+                                    .fill(index == currentIndex ? SwiftFinColor.textDark : SwiftFinColor.textDarkSecondary.opacity(0.3))
                                     .frame(width: 8, height: 8)
                                     .animation(.easeInOut(duration: 0.2), value: currentIndex)
                             }
@@ -743,28 +755,29 @@ struct CheckingAccountPurchasesCard: View {
                     Text(accountAlias)
                         .font(.title3)
                         .fontWeight(.bold)
-                        .foregroundStyle(SwiftFinColor.textPrimary)
+                        .foregroundStyle(SwiftFinColor.textDark)
                     Text("Checking Account")
                         .font(.caption)
-                        .foregroundStyle(SwiftFinColor.textSecondary)
+                        .foregroundStyle(SwiftFinColor.textDarkSecondary)
                 }
                 Spacer()
             }
             
             Divider()
             
-            // Purchases list
+            // Purchases list (FILTRADAS POR MES)
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Text("Recent Purchases")
+                    Text("Purchases (This Month)")
                         .font(.subheadline)
                         .fontWeight(.semibold)
+                        .foregroundStyle(SwiftFinColor.textDark)
                     Spacer()
                     if isLoadingPurchases { ProgressView().scaleEffect(0.8) }
                     else {
                         Text("\(purchases.count) total")
                             .font(.caption)
-                            .foregroundStyle(SwiftFinColor.textSecondary)
+                            .foregroundStyle(SwiftFinColor.textDarkSecondary)
                     }
                 }
                 
@@ -776,10 +789,10 @@ struct CheckingAccountPurchasesCard: View {
                         VStack(spacing: 8) {
                             Image(systemName: "cart")
                                 .font(.title2)
-                                .foregroundStyle(SwiftFinColor.textSecondary)
+                                .foregroundStyle(SwiftFinColor.textDarkSecondary)
                             Text("No purchases found")
                                 .font(.caption)
-                                .foregroundStyle(SwiftFinColor.textSecondary)
+                                .foregroundStyle(SwiftFinColor.textDarkSecondary)
                         }
                         .frame(height: 100)
                         .frame(maxWidth: .infinity)
@@ -830,18 +843,18 @@ struct CheckingPurchaseRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(purchase.merchantName)
                     .font(.subheadline)
-                    .foregroundStyle(SwiftFinColor.textPrimary)
+                    .foregroundStyle(SwiftFinColor.textDark)
                     .lineLimit(1)
                 
                 HStack(spacing: 4) {
                     Text(purchase.date.formatted(date: .abbreviated, time: .omitted))
                         .font(.caption)
-                        .foregroundStyle(SwiftFinColor.textSecondary)
+                        .foregroundStyle(SwiftFinColor.textDarkSecondary)
                     
                     if let category = purchase.selectedCategory, category != "-" {
                         Text("•")
                             .font(.caption)
-                            .foregroundStyle(SwiftFinColor.textSecondary)
+                            .foregroundStyle(SwiftFinColor.textDarkSecondary)
                         
                         Image(systemName: category.categoryIcon)
                             .font(.caption)
@@ -853,10 +866,10 @@ struct CheckingPurchaseRow: View {
                     } else {
                         Text("•")
                             .font(.caption)
-                            .foregroundStyle(SwiftFinColor.textSecondary)
+                            .foregroundStyle(SwiftFinColor.textDarkSecondary)
                         Image(systemName: "tag")
                             .font(.caption2)
-                            .foregroundStyle(SwiftFinColor.textSecondary)
+                            .foregroundStyle(SwiftFinColor.textDarkSecondary)
                     }
                 }
             }
@@ -871,7 +884,7 @@ struct CheckingPurchaseRow: View {
                 
                 Image(systemName: "chevron.right")
                     .font(.caption2)
-                    .foregroundStyle(SwiftFinColor.textSecondary)
+                    .foregroundStyle(SwiftFinColor.textDarkSecondary)
             }
         }
     }
@@ -880,6 +893,7 @@ struct CheckingPurchaseRow: View {
 // MARK: - Previews
 struct ExpensesScreen_Previews: PreviewProvider {
     static var previews: some View {
+        
         
         ExpensesScreen()
             .preferredColorScheme(.dark)

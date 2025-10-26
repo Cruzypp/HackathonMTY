@@ -40,7 +40,7 @@ struct BarCashFlow: View {
                 .position(by: .value("Type", "Expense"))
             }
         }
-        .chartYAxisLabel("USD")
+        .chartYAxisLabel("USD", position: .leading)
         .chartForegroundStyleScale([
             "Income": SwiftFinColor.positiveGreen,
             "Expense": SwiftFinColor.negativeRed
@@ -53,7 +53,7 @@ struct BarCashFlow: View {
                         .frame(width: 8, height: 8)
                     Text("Income")
                         .font(.caption)
-                        .foregroundStyle(SwiftFinColor.textSecondary)
+                        .foregroundColor(.white)
                 }
                 HStack(spacing: 4) {
                     Circle()
@@ -61,8 +61,27 @@ struct BarCashFlow: View {
                         .frame(width: 8, height: 8)
                     Text("Expenses")
                         .font(.caption)
-                        .foregroundStyle(SwiftFinColor.textSecondary)
+                        .foregroundColor(.white)
                 }
+            }
+        }
+        // ✅ Estilo de texto blanco para todo el chart
+        .chartXAxis {
+            AxisMarks() { _ in
+                AxisGridLine()
+                    .foregroundStyle(.white.opacity(0.2))
+                AxisValueLabel()
+                    .foregroundStyle(.white)
+                    .font(.caption)
+            }
+        }
+        .chartYAxis {
+            AxisMarks() { _ in
+                AxisGridLine()
+                    .foregroundStyle(.white.opacity(0.2))
+                AxisValueLabel()
+                    .foregroundStyle(.white)
+                    .font(.caption)
             }
         }
         .onAppear {

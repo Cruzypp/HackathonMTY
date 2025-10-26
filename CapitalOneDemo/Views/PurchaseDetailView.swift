@@ -19,7 +19,9 @@ struct PurchaseDetailView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(purchase.merchantName)
-                        .font(.title3).bold()
+                        .font(.title3)
+                        .bold()
+                        .foregroundStyle(SwiftFinColor.textPrimary)
                     Text(purchase.date.formatted(date: .long, time: .omitted))
                         .font(.caption)
                         .foregroundStyle(SwiftFinColor.textSecondary)
@@ -46,6 +48,7 @@ struct PurchaseDetailView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Category")
                     .font(.headline)
+                    .foregroundStyle(SwiftFinColor.textPrimary)
                 Picker("Category", selection: $selectedCategory) {
                     ForEach(categories, id: \.self) { cat in
                         Text(cat).tag(cat)
@@ -89,9 +92,9 @@ private struct RowDetail: View {
     let value: String
     var body: some View {
         HStack {
-            Text(label).font(.caption).foregroundStyle(SwiftFinColor.textSecondary)
+            Text(label).font(.caption).foregroundStyle(SwiftFinColor.textPrimary)
             Spacer()
-            Text(value).font(.subheadline)
+            Text(value).font(.subheadline).foregroundStyle(SwiftFinColor.textPrimary)
         }
     }
 }
@@ -110,7 +113,6 @@ private struct RowDetail: View {
     return NavigationStack { PurchaseDetailView(purchase: sample) }
         .environmentObject(PreviewMocks.monthSelector)
         .environmentObject(PreviewMocks.ledger)
-        .preferredColorScheme(.dark)
 }
 
 // No helpers needed for wheel picker

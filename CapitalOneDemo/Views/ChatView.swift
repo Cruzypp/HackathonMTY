@@ -49,7 +49,7 @@ struct ChatView: View {
                         ProgressView()
                             .tint(SwiftFinColor.accentBlue)
                         Text("FinBot is typing...")
-                            .foregroundStyle(SwiftFinColor.textSecondary)
+                            .foregroundStyle(SwiftFinColor.textPrimary)
                             .font(.caption)
                         Spacer()
                     }
@@ -63,11 +63,16 @@ struct ChatView: View {
                 
                 // --- Barra de Entrada de Texto con efecto glass ---
                 HStack(spacing: 12) {
-                    TextField("Ask FinBot... (e.g., 'What is inflation?')", text: $textInput, axis: .vertical)
+                    
+                    // <-- CAMBIO AQUI (1 y 2): Se usa 'prompt' para el placeholder blanco
+                    TextField("", text: $textInput, prompt:
+                                Text("Ask FinBot... (e.g., 'What is inflation?')")
+                        .foregroundStyle(.white), axis: .vertical // 1. Placeholder blanco
+                    )
                         .lineLimit(3)
                         .padding(12)
-                        .foregroundStyle(SwiftFinColor.textPrimary)
                         .tint(SwiftFinColor.accentBlue)
+                        .foregroundStyle(.white) // 2. Texto de entrada (tipeado) blanco
                         .background(
                             ZStack {
                                 RoundedRectangle(cornerRadius: 20)
@@ -100,7 +105,7 @@ struct ChatView: View {
                             Circle()
                                 .fill(
                                     LinearGradient(
-                                        colors: textInput.isEmpty ? 
+                                        colors: textInput.isEmpty ?
                                             [SwiftFinColor.surfaceAlt, SwiftFinColor.surface] :
                                             [SwiftFinColor.accentBlue, Color(hex: "#00559A")],
                                         startPoint: .topLeading,
@@ -124,7 +129,7 @@ struct ChatView: View {
                             Image(systemName: "arrow.up")
                                 .font(.title3)
                                 .fontWeight(.semibold)
-                                .foregroundStyle(textInput.isEmpty ? SwiftFinColor.textSecondary : .white)
+                                .foregroundStyle(.white) // <-- CAMBIO AQUI (3): Flecha siempre blanca
                         }
                         .shadow(color: textInput.isEmpty ? .clear : SwiftFinColor.accentBlue.opacity(0.4), radius: 8, y: 4)
                     }
@@ -166,5 +171,85 @@ struct ChatView: View {
 #Preview {
     NavigationView { // Envuelve en NavigationView para ver el título
         ChatView()
+            // Asumiendo que tienes colores definidos, si no, reemplázalos
+            // .environmentObject(ChatViewModel())
+            // .preferredColorScheme(.dark)
     }
 }
+
+/*
+// --- Necesitarías algo como esto para que el Preview compile ---
+// (Puedes ignorar esto si ya lo tienes en tu proyecto)
+struct SwiftFinColor {
+    static let bgPrimary = Color.black
+    static let surface = Color.gray.opacity(0.5)
+    static let surfaceAlt = Color.gray.opacity(0.3)
+    static let accentBlue = Color.blue
+    static let textPrimary = Color.white
+    static let textSecondary = Color.gray
+    static let divider = Color.gray.opacity(0.2)
+}
+
+extension Color {
+    init(hex: String) {
+        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        let a, r, g, b: UInt64
+        switch hex.count {
+        case 3: // RGB (12-bit)
+            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+        case 6: // RGB (24-bit)
+            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        case 8: // ARGB (32-bit)
+            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+        default:
+            (a, r, g, b) = (1, 1, 1, 0)
+        }
+        self.init(
+            .sRGB,
+            red: Double(r) / 255,
+            green: Double(g) / 255,
+            blue:  Double(b) / 255,
+            opacity: Double(a) / 255
+        )
+    }
+}
+
+struct MessageBubble: View {
+    let message: Message
+    var body: some View {
+        Text(message.content)
+            .padding()
+            .background(message.isFromUser ? Color.blue : Color.gray.opacity(0.5))
+            .foregroundColor(.white)
+            .cornerRadius(10)
+    }
+}
+
+struct Message: Identifiable, Equatable {
+    let id: UUID = UUID()
+    let content: String
+    let isFromUser: Bool
+}
+
+@MainActor
+class ChatViewModel: ObservableObject {
+    @Published var messages: [Message] = [
+        .init(content: "Hello! How can I help you with your finances today?", isFromUser: false)
+    ]
+    @Published var isLoading: Bool = false
+    
+    func sendMessage(_ text: String) async {
+        guard !text.isEmpty else { return }
+        messages.append(Message(content: text, isFromUser: true))
+        isLoading = true
+        
+        // Simula una respuesta de red
+        try? await Task.sleep(nanoseconds: 2_000_000_000)
+        
+        messages.append(Message(content: "This is a simulated response about '\(text)'.", isFromUser: false))
+        isLoading = false
+    }
+}
+*/

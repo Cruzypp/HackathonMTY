@@ -78,6 +78,5 @@ struct SwiftFinRoot_Previews: PreviewProvider {
             .environmentObject(PreviewMocks.ledger)
             .environmentObject(PreviewMocks.monthSelector)
             .previewDevice("iPhone 14")
-            .preferredColorScheme(.dark)
     }
 }
