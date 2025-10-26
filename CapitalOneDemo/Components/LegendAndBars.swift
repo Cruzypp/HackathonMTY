@@ -9,10 +9,13 @@ struct LegendSimple: View {
             ForEach(items.indices, id: \.self) { i in
                 HStack {
                     Circle().fill(palette[i % palette.count]).frame(width: 10, height: 10)
-                    Text(items[i].name).font(.caption)
+                    Text(items[i].name)
+                        .font(.caption)
+                        .foregroundStyle(SwiftFinColor.textDark)
                     Spacer()
                     Text(String(format: "$%.0f", items[i].amount))
-                        .font(.caption).foregroundStyle(SwiftFinColor.textSecondary)
+                        .font(.caption)
+                        .foregroundStyle(SwiftFinColor.textDarkSecondary)
                 }
             }
         }
@@ -66,9 +69,10 @@ struct CategorySpendingBar: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text(name)
+                    .foregroundStyle(SwiftFinColor.textDark)
                 Spacer()
                 Text(String(format: "$%.0f / $%.0f", spent, total))
-                    .foregroundStyle(SwiftFinColor.textSecondary)
+                    .foregroundStyle(SwiftFinColor.textDarkSecondary)
                     .font(.caption)
             }
             GeometryReader { geo in

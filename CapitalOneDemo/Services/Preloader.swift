@@ -3,6 +3,11 @@ import Foundation
 /// Service responsible for preloading API data into the app's data stores
 final class Preloader {
     
+    // Cache para evitar llamadas duplicadas
+    private static var isPreloading = false
+    private static var lastPreloadTime: Date?
+    private static let cacheTimeout: TimeInterval = 300 // 5 minutos
+    
     // MARK: - Public Interface
     
     /// Preloads all account and transaction data from Nessie API
@@ -11,9 +16,27 @@ final class Preloader {
     ///   - apiKey: Nessie API key
     ///   - ledger: LedgerViewModel to populate with transactions
     static func preloadAll(customerId: String, apiKey: String, into ledger: LedgerViewModel) {
-        print("🔄 Preloader: Starting data preload for customer: \(customerId)")
+        // Evitar preload duplicados
+        guard !isPreloading else {
+            print("⚠️ Preloader: Already preloading, skipping...")
+            return
+        }
+        
+        // Cache: no recargar si fue hace menos de 5 minutos
+        if let lastTime = lastPreloadTime, Date().timeIntervalSince(lastTime) < cacheTimeout {
+            print("✅ Preloader: Using cached data (last load: \(Int(Date().timeIntervalSince(lastTime)))s ago)")
+            return
+        }
+        
+        isPreloading = true
+        print("🔄 Preloader: Starting optimized data preload for customer: \(customerId)")
         
         fetchAndStoreAccounts(customerId: customerId, apiKey: apiKey) { accounts in
+            defer { 
+                isPreloading = false
+                lastPreloadTime = Date()
+            }
+            
             var allAccounts = accounts
             
             // Add override checking account if configured and not already in list
@@ -42,7 +65,9 @@ final class Preloader {
             DispatchQueue.main.async {
                 ledger.accounts = allAccounts
             }
-            loadTransactionsForAccounts(allAccounts, apiKey: apiKey, into: ledger)
+            
+            // OPTIMIZACIÓN: Cargar transacciones en paralelo en lugar de secuencial
+            loadTransactionsInParallel(allAccounts, apiKey: apiKey, into: ledger)
         }
     }
     
@@ -78,116 +103,132 @@ final class Preloader {
         }
     }
     
-    /// Loads transactions (purchases and deposits) for all accounts
-    private static func loadTransactionsForAccounts(
+    // NUEVO: Cargar todas las transacciones en paralelo
+    private static func loadTransactionsInParallel(
         _ accounts: [Account],
         apiKey: String,
         into ledger: LedgerViewModel
     ) {
+        let dispatchGroup = DispatchGroup()
+        let transactionsQueue = DispatchQueue(label: "com.swiftfin.transactions", attributes: .concurrent)
+        var allTransactions: [Tx] = []
+        let transactionsLock = NSLock()
+        
         for account in accounts {
             let accountAlias = account.nickname.isEmpty ? account.type : account.nickname
             
-            loadPurchasesForAccount(account, accountAlias: accountAlias, apiKey: apiKey, into: ledger)
-            loadDepositsForAccount(account, accountAlias: accountAlias, apiKey: apiKey, into: ledger)
+            // Cargar purchases en paralelo
+            dispatchGroup.enter()
+            transactionsQueue.async {
+                loadPurchasesSync(account, accountAlias: accountAlias, apiKey: apiKey) { txs in
+                    transactionsLock.lock()
+                    allTransactions.append(contentsOf: txs)
+                    transactionsLock.unlock()
+                    dispatchGroup.leave()
+                }
+            }
+            
+            // Cargar deposits en paralelo
+            dispatchGroup.enter()
+            transactionsQueue.async {
+                loadDepositsSync(account, accountAlias: accountAlias, apiKey: apiKey) { txs in
+                    transactionsLock.lock()
+                    allTransactions.append(contentsOf: txs)
+                    transactionsLock.unlock()
+                    dispatchGroup.leave()
+                }
+            }
+        }
+        
+        dispatchGroup.notify(queue: .main) {
+            print("✅ Preloader: All transactions loaded (\(allTransactions.count) total)")
+            ledger.transactions.append(contentsOf: allTransactions)
         }
     }
     
-    /// Loads purchases (expenses) for a specific account
-    private static func loadPurchasesForAccount(
+    // Versión sincrónica de loadPurchases
+    private static func loadPurchasesSync(
         _ account: Account,
         accountAlias: String,
         apiKey: String,
-        into ledger: LedgerViewModel
+        completion: @escaping ([Tx]) -> Void
     ) {
+        let semaphore = DispatchSemaphore(value: 0)
+        var transactions: [Tx] = []
+        
         NessieService.shared.fetchPurchases(forAccountId: account.id, apiKey: apiKey) { result in
+            defer { semaphore.signal() }
+            
             switch result {
             case .success(let purchases):
                 print("📦 Preloader: Processing \(purchases.count) purchases for \(accountAlias)")
                 
+                // Procesar en batch para evitar demasiadas llamadas API
+                let merchantGroup = DispatchGroup()
+                var processedTransactions: [Tx] = []
+                
                 for purchase in purchases {
-                    processPurchase(purchase, accountAlias: accountAlias, apiKey: apiKey, into: ledger)
+                    let date = parseDate(purchase.purchaseDate)
+                    
+                    if purchase.merchantId.isEmpty {
+                        let tx = Tx(
+                            date: date,
+                            title: purchase.description,
+                            category: "Uncategorized",
+                            amount: purchase.amount,
+                            kind: .expense,
+                            accountId: purchase.payerId,
+                            purchaseId: purchase.id
+                        )
+                        processedTransactions.append(tx)
+                    } else {
+                        merchantGroup.enter()
+                        fetchMerchantQuick(purchase.merchantId, apiKey: apiKey) { merchantName in
+                            let tx = Tx(
+                                date: date,
+                                title: merchantName ?? purchase.description,
+                                category: "Uncategorized",
+                                amount: purchase.amount,
+                                kind: .expense,
+                                accountId: purchase.payerId,
+                                purchaseId: purchase.id
+                            )
+                            processedTransactions.append(tx)
+                            merchantGroup.leave()
+                        }
+                    }
                 }
+                
+                merchantGroup.wait()
+                transactions = processedTransactions
                 
             case .failure(let error):
                 print("❌ Preloader: Failed to fetch purchases for \(accountAlias) - \(error)")
             }
         }
-    }
-    
-    /// Processes a single purchase, fetching merchant info if available
-    private static func processPurchase(
-        _ purchase: Purchase,
-        accountAlias: String,
-        apiKey: String,
-        into ledger: LedgerViewModel
-    ) {
-        let date = parseDate(purchase.purchaseDate)
         
-        if purchase.merchantId.isEmpty {
-            // No merchant ID, use purchase description
-            let transaction = Tx(
-                date: date,
-                title: purchase.description,
-                category: "Uncategorized",
-                amount: purchase.amount,
-                kind: .expense,
-                accountId: purchase.payerId,
-                purchaseId: purchase.id
-            )
-            addTransactionToLedger(transaction, ledger: ledger)
-        } else {
-            // Fetch merchant details
-            fetchMerchantAndCreateTransaction(
-                purchase: purchase,
-                accountAlias: accountAlias,
-                apiKey: apiKey,
-                into: ledger
-            )
-        }
+        semaphore.wait()
+        completion(transactions)
     }
     
-    /// Fetches merchant details and creates transaction with merchant name
-    private static func fetchMerchantAndCreateTransaction(
-        purchase: Purchase,
-        accountAlias: String,
-        apiKey: String,
-        into ledger: LedgerViewModel
-    ) {
-        NessieService.shared.fetchMerchant(forId: purchase.merchantId, apiKey: apiKey) { result in
-            let title: String
-            switch result {
-            case .success(let merchant):
-                title = merchant.name
-            case .failure:
-                title = purchase.description
-            }
-            
-            let transaction = Tx(
-                date: parseDate(purchase.purchaseDate),
-                title: title,
-                category: "Uncategorized",
-                amount: purchase.amount,
-                kind: .expense,
-                accountId: purchase.payerId,
-                purchaseId: purchase.id
-            )
-            addTransactionToLedger(transaction, ledger: ledger)
-        }
-    }
-    
-    /// Loads deposits (income) for a specific account
-    private static func loadDepositsForAccount(
+    // Versión sincrónica de loadDeposits
+    private static func loadDepositsSync(
         _ account: Account,
         accountAlias: String,
         apiKey: String,
-        into ledger: LedgerViewModel
+        completion: @escaping ([Tx]) -> Void
     ) {
+        let semaphore = DispatchSemaphore(value: 0)
+        var transactions: [Tx] = []
+        
         NessieService.shared.fetchDeposits(forAccountId: account.id, apiKey: apiKey) { result in
+            defer { semaphore.signal() }
+            
             switch result {
             case .success(let deposits):
                 print("💰 Preloader: Processing \(deposits.count) deposits for \(accountAlias)")
                 
-                let transactions = deposits.map { deposit in
+                transactions = deposits.map { deposit in
                     Tx(
                         date: parseDate(deposit.transaction_date),
                         title: deposit.description,
@@ -198,27 +239,45 @@ final class Preloader {
                     )
                 }
                 
-                DispatchQueue.main.async {
-                    ledger.transactions.append(contentsOf: transactions)
-                }
-                
             case .failure(let error):
                 print("❌ Preloader: Failed to fetch deposits for \(accountAlias) - \(error)")
             }
         }
+        
+        semaphore.wait()
+        completion(transactions)
     }
     
-    /// Safely adds a transaction to the ledger on the main queue
-    private static func addTransactionToLedger(_ transaction: Tx, ledger: LedgerViewModel) {
-        DispatchQueue.main.async {
-            print("🧾 Preloader: Upsert Tx -> date=\(transaction.date), title=\(transaction.title), amount=\(transaction.amount), accountId=\(transaction.accountId ?? "nil"), purchaseId=\(transaction.purchaseId ?? "nil")")
-            if let pid = transaction.purchaseId,
-               let idx = ledger.transactions.firstIndex(where: { $0.purchaseId == pid }) {
-                // Update existing transaction (avoid duplicates when reloading)
-                ledger.transactions[idx] = transaction
-            } else {
-                ledger.transactions.append(transaction)
+    // Cache de merchants para evitar llamadas duplicadas
+    private static var merchantCache: [String: String] = [:]
+    private static let merchantCacheLock = NSLock()
+    
+    private static func fetchMerchantQuick(_ merchantId: String, apiKey: String, completion: @escaping (String?) -> Void) {
+        merchantCacheLock.lock()
+        if let cached = merchantCache[merchantId] {
+            merchantCacheLock.unlock()
+            completion(cached)
+            return
+        }
+        merchantCacheLock.unlock()
+        
+        NessieService.shared.fetchMerchant(forId: merchantId, apiKey: apiKey) { result in
+            let name: String? = {
+                switch result {
+                case .success(let merchant):
+                    return merchant.name
+                case .failure:
+                    return nil
+                }
+            }()
+            
+            if let name = name {
+                merchantCacheLock.lock()
+                merchantCache[merchantId] = name
+                merchantCacheLock.unlock()
             }
+            
+            completion(name)
         }
     }
     

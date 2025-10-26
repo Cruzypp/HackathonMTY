@@ -4,32 +4,55 @@ struct MonthSelectionControl: View {
     @EnvironmentObject var monthSelector: MonthSelector
     
     var body: some View {
-        HStack {
-            Button {
+        HStack(spacing: 16) {
+            // Botón anterior
+            Button(action: {
                 monthSelector.previousMonth()
-            } label: {
-                Image(systemName: "chevron.left")
+            }) {
+                Image(systemName: "chevron.left.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(SwiftFinColor.accentBlue)
             }
-            .buttonStyle(.plain)
-
-            Spacer()
+            .buttonStyle(PlainButtonStyle())
             
-            Label(monthSelector.currentMonthYear, systemImage: "calendar")
-                .font(.subheadline).bold()
-                .padding(.vertical, 8).padding(.horizontal, 12)
-                .background(SwiftFinColor.surfaceAlt).clipShape(Capsule())
+            VStack(spacing: 4) {
+                Text(monthLabel)
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                Text(String(yearLabel))
+                    .font(.caption)
+                    .foregroundStyle(SwiftFinColor.textSecondary)
+            }
+            .frame(minWidth: 120)
             
-            Spacer()
-
-            Button {
+            // Botón siguiente
+            Button(action: {
                 monthSelector.nextMonth()
-            } label: {
-                Image(systemName: "chevron.right")
+            }) {
+                Image(systemName: "chevron.right.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(SwiftFinColor.accentBlue)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PlainButtonStyle())
             .disabled(monthSelector.isCurrentMonth)
         }
-        .foregroundStyle(SwiftFinColor.textPrimary)
+        .padding(.vertical, 12)
         .padding(.horizontal, 16)
+        .background(SwiftFinColor.surface)
+        .cornerRadius(12)
+        .shadow(color: SwiftFinColor.textSecondary.opacity(0.1), radius: 4)
+    }
+    
+    // Computed properties usando monthSelector.selectedDate
+    private var monthLabel: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM"
+        return formatter.string(from: monthSelector.selectedDate)
+    }
+    
+    private var yearLabel: Int {
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.year], from: monthSelector.selectedDate)
+        return components.year ?? 2024
     }
 }
