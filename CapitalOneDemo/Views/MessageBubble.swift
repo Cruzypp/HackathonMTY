@@ -9,7 +9,7 @@ struct MessageBubble: View {
                 Spacer() // Empuja la burbuja del usuario a la derecha
             }
             
-            Text(message.text)
+            Text(.init(message.text))
                 .padding(12)
                 .background(message.isFromUser ? .blue : Color(.systemGray5))
                 .foregroundStyle(message.isFromUser ? .white : .primary)
