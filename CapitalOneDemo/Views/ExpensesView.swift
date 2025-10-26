@@ -271,12 +271,13 @@ struct SwipeableCardViewWithIndex<Item: Identifiable, Content: View>: View {
     
     var body: some View {
         VStack(spacing: 16) {
-            // Indicadores de página
+            // Indicadores de página con colores más visibles
             if items.count > 1 {
                 HStack(spacing: 8) {
                     ForEach(0..<items.count, id: \.self) { index in
                         Circle()
                             .fill(index == currentIndex ? SwiftFinColor.textPrimary : SwiftFinColor.textSecondary.opacity(0.3))
+                            .fill(index == currentIndex ? Color.white : Color.white.opacity(0.3))
                             .frame(width: 8, height: 8)
                             .animation(.easeInOut(duration: 0.2), value: currentIndex)
                     }
@@ -329,13 +330,13 @@ struct SwipeableCardViewWithIndex<Item: Identifiable, Content: View>: View {
                 HStack(spacing: 4) {
                     Image(systemName: "chevron.left")
                         .font(.caption2)
-                        .foregroundStyle(SwiftFinColor.textSecondary.opacity(0.6))
+                        .foregroundStyle(Color.white.opacity(0.7))
                     Text("Swipe or use buttons to change cards")
                         .font(.caption2)
-                        .foregroundStyle(SwiftFinColor.textSecondary.opacity(0.6))
+                        .foregroundStyle(Color.white.opacity(0.7))
                     Image(systemName: "chevron.right")
                         .font(.caption2)
-                        .foregroundStyle(SwiftFinColor.textSecondary.opacity(0.6))
+                        .foregroundStyle(Color.white.opacity(0.7))
                 }
                 .padding(.bottom, 8)
             }
@@ -669,17 +670,17 @@ struct CheckingAccountsPurchasesCarousel: View {
                 }
                 
                 if !accounts.isEmpty {
-                    // Page indicators
+                    // Page indicators con colores más visibles
                     if accounts.count > 1 {
                         HStack(spacing: 8) {
                             ForEach(0..<accounts.count, id: \.self) { index in
                                 Circle()
-                                    .fill(index == currentIndex ? SwiftFinColor.textDark : SwiftFinColor.textDarkSecondary.opacity(0.3))
+                                    .fill(index == currentIndex ? Color.white : Color.white.opacity(0.3))
                                     .frame(width: 8, height: 8)
                                     .animation(.easeInOut(duration: 0.2), value: currentIndex)
-                            }
                         }
-                        .padding(.top, 8)
+                    }
+                    .padding(.top, 8)
                     }
                     
                     // Swipeable cards
@@ -708,18 +709,18 @@ struct CheckingAccountsPurchasesCarousel: View {
                             }
                     )
                     
-                    // Navigation hint
+                    // Navigation hint con colores más visibles
                     if accounts.count > 1 {
                         HStack(spacing: 4) {
                             Image(systemName: "chevron.left")
                                 .font(.caption2)
-                                .foregroundStyle(SwiftFinColor.textSecondary.opacity(0.6))
+                                .foregroundStyle(Color.white.opacity(0.7))
                             Text("Swipe to change accounts")
                                 .font(.caption2)
-                                .foregroundStyle(SwiftFinColor.textSecondary.opacity(0.6))
+                                .foregroundStyle(Color.white.opacity(0.7))
                             Image(systemName: "chevron.right")
                                 .font(.caption2)
-                                .foregroundStyle(SwiftFinColor.textSecondary.opacity(0.6))
+                                .foregroundStyle(Color.white.opacity(0.7))
                         }
                         .padding(.bottom, 8)
                     }

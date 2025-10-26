@@ -165,15 +165,19 @@ struct BarIncome: View {
         }
         .chartYAxisLabel("USD")
         .chartXAxis {
-            AxisMarks { value in
                 AxisGridLine()
+                    .foregroundStyle(.white.opacity(0.2))
                 AxisValueLabel()
+                    .foregroundStyle(.white)
+                    .font(.caption)
             }
         }
         .chartYAxis {
-            AxisMarks(position: .leading) { value in
                 AxisGridLine()
+                    .foregroundStyle(.white.opacity(0.2))
                 AxisValueLabel()
+                    .foregroundStyle(.white)
+                    .font(.caption)
             }
         }
         .onAppear {

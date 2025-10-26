@@ -69,9 +69,10 @@ struct CategorySpendingBar: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text(name)
+                    .foregroundStyle(SwiftFinColor.textDark)
                 Spacer()
                 Text(String(format: "$%.0f / $%.0f", spent, total))
-                    .foregroundStyle(SwiftFinColor.textSecondary)
+                    .foregroundStyle(SwiftFinColor.textDarkSecondary)
                     .font(.caption)
             }
             GeometryReader { geo in

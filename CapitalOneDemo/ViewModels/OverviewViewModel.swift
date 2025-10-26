@@ -58,7 +58,11 @@ class OverviewViewModel: ObservableObject {
     }
 
     private func updateData() {
-        guard let ledger = ledger, let monthSelector = monthSelector else { return }
+        guard let ledger = ledger, let monthSelector = monthSelector else {
+            print("⚠️ OverviewViewModel: Missing dependencies")
+            return
+        }
+        
         let monthInterval = monthSelector.monthInterval
         
         print("🔄 OverviewViewModel: Updating data for month interval: \(monthInterval.start) to \(monthInterval.end)")
@@ -66,11 +70,7 @@ class OverviewViewModel: ObservableObject {
 
         // Filtrar transacciones para el mes seleccionado
         let transactionsForMonth = ledger.transactions.filter { tx in
-            let isInMonth = monthInterval.contains(tx.date)
-            if isInMonth {
-                print("✅ Transaction '\(tx.title)' (\(tx.date)) is in selected month")
-            }
-            return isInMonth
+            monthInterval.contains(tx.date)
         }
         
         print("📊 OverviewViewModel: Transactions for selected month: \(transactionsForMonth.count)")
@@ -159,7 +159,7 @@ class OverviewViewModel: ObservableObject {
             ))
         }
         
-        return result.reversed() // Para mostrar desde el más antiguo al más reciente
+        return result.reversed()
     }
 }
 
