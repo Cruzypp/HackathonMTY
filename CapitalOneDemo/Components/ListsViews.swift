@@ -8,12 +8,14 @@ struct RecentTransactions: View {
     var body: some View {
         Card {
             HStack {
-                Text(title).font(.headline)
+                Text(title)
+                    .font(.headline)
+                    .foregroundStyle(SwiftFinColor.textDark) // Blanco para card oscura
                 Spacer()
                 if let onViewAll {
                     Button("View All >", action: onViewAll)
                         .font(.caption)
-                        .foregroundStyle(SwiftFinColor.textSecondary)
+                        .foregroundStyle(SwiftFinColor.capitalOneRed)
                 }
             }
             VStack(spacing: 10) {
@@ -32,7 +34,9 @@ struct RecentExpenses: View {
     @EnvironmentObject var ledger: LedgerViewModel
     var body: some View {
         Card {
-            Text("Recent Expenses").font(.headline)
+            Text("Recent Expenses")
+                .font(.headline)
+                .foregroundStyle(SwiftFinColor.textDark) // Blanco
             VStack(spacing: 10) {
                 ForEach(ledger.expensesThisMonth.sorted { $0.date > $1.date }.prefix(4)) { tx in
                     RowTx(icon: "arrow.down.circle",
@@ -49,7 +53,9 @@ struct RecentIncome: View {
     @EnvironmentObject var ledger: LedgerViewModel
     var body: some View {
         Card {
-            Text("Recent Income").font(.headline)
+            Text("Recent Income")
+                .font(.headline)
+                .foregroundStyle(SwiftFinColor.textDark) // Blanco
             VStack(spacing: 10) {
                 ForEach(ledger.incomeThisMonth.sorted { $0.date > $1.date }.prefix(3)) { tx in
                     RowTx(icon: "arrow.up.circle",
@@ -70,17 +76,54 @@ struct RowTx: View {
     var body: some View {
         HStack(spacing: 12) {
             ZStack {
-                Circle().fill(SwiftFinColor.surfaceAlt).frame(width: 34, height: 34)
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [SwiftFinColor.surfaceAlt.opacity(0.8), SwiftFinColor.surface.opacity(0.6)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 40, height: 40)
+                
+                Circle()
+                    .stroke(
+                        LinearGradient(
+                            colors: [.white.opacity(0.2), .clear],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
+                    .frame(width: 40, height: 40)
+                
                 Image(systemName: icon)
+                    .font(.system(size: 18))
+                    .foregroundStyle(
+                        amount < 0 ? 
+                            SwiftFinColor.negativeRed : 
+                            SwiftFinColor.positiveGreen
+                    )
             }
-            VStack(alignment: .leading, spacing: 2) {
+            
+            VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                Text(subtitle).font(.caption).foregroundStyle(SwiftFinColor.textSecondary)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundStyle(SwiftFinColor.textDark) // Blanco
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(SwiftFinColor.textDarkSecondary) // Gris claro
             }
+            
             Spacer()
+            
             Text(String(format: "%@$%.2f", amount < 0 ? "−" : "+", abs(amount)))
+                .font(.subheadline)
+                .fontWeight(.semibold)
                 .foregroundStyle(amount < 0 ? SwiftFinColor.negativeRed : SwiftFinColor.positiveGreen)
         }
+        .padding(.vertical, 4)
     }
 }
 

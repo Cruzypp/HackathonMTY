@@ -12,12 +12,18 @@ struct IncomeScreen: View {
             
             Card {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Total Income (This Month)").foregroundStyle(SwiftFinColor.textSecondary).font(.caption)
+                    Text("Total Income (This Month)")
+                        .foregroundStyle(SwiftFinColor.textDarkSecondary)
+                        .font(.caption)
                     Text(String(format: "$%.2f", vm.totalIncomeThisMonth))
                         .font(.system(size: 28, weight: .bold))
+                        .foregroundStyle(SwiftFinColor.textDark)
                     HStack(spacing: 6) {
-                        Image(systemName: "arrow.up.right").foregroundStyle(SwiftFinColor.positiveGreen)
-                        Text("Monthly trend").foregroundStyle(SwiftFinColor.positiveGreen).font(.footnote)
+                        Image(systemName: "arrow.up.right")
+                            .foregroundStyle(SwiftFinColor.positiveGreen)
+                        Text("Monthly trend")
+                            .foregroundStyle(SwiftFinColor.positiveGreen)
+                            .font(.footnote)
                     }
                 }
             }
@@ -26,7 +32,9 @@ struct IncomeScreen: View {
             Card {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack {
-                        Text("Checking Balance (API)").foregroundStyle(SwiftFinColor.textSecondary).font(.caption)
+                        Text("Checking Balance (API)")
+                            .foregroundStyle(SwiftFinColor.textDarkSecondary)
+                            .font(.caption)
                         Spacer()
                         Button(action: {
                             vm.refreshData()
@@ -41,12 +49,15 @@ struct IncomeScreen: View {
                     } else {
                         Text(String(format: "$%.2f", vm.checkingBalance))
                             .font(.system(size: 22, weight: .semibold))
+                            .foregroundStyle(SwiftFinColor.textDark)
                     }
                 }
             }
 
             Card {
-                Text("Income (last 6 months)").font(.headline)
+                Text("Income (last 6 months)")
+                    .font(.headline)
+                    .foregroundStyle(SwiftFinColor.textDark)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 BarIncome()
                     .frame(height: 190)
@@ -74,7 +85,9 @@ struct IncomeScreen: View {
 
             // NEW: Expense Sources This Month
             Card {
-                Text("Expense Sources (This Month)").font(.headline)
+                Text("Expense Sources (This Month)")
+                    .font(.headline)
+                    .foregroundStyle(SwiftFinColor.textDark)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 VStack(spacing: 12) {
                     let totalExpenses = max(vm.totalExpensesThisMonth, 1)
@@ -85,13 +98,14 @@ struct IncomeScreen: View {
                     if expenseSources.isEmpty {
                         Text("No expenses recorded this month")
                             .font(.caption)
-                            .foregroundStyle(SwiftFinColor.textSecondary)
+                            .foregroundStyle(SwiftFinColor.textDarkSecondary)
                             .frame(maxWidth: .infinity, alignment: .center)
                             .padding(.vertical, 8)
                     } else {
                         ForEach(Array(expenseSources.enumerated()), id: \.offset) { _, s in
                             HStack {
                                 Label(s.name, systemImage: "cart.fill")
+                                    .foregroundStyle(SwiftFinColor.textDark)
                                 Spacer()
                                 Text(String(format: "$%.0f", s.amount))
                                     .foregroundStyle(SwiftFinColor.negativeRed)
@@ -106,7 +120,9 @@ struct IncomeScreen: View {
             // NEW: Net This Month (Income - Expenses)
             Card {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Net This Month").foregroundStyle(SwiftFinColor.textSecondary).font(.caption)
+                    Text("Net This Month")
+                        .foregroundStyle(SwiftFinColor.textDarkSecondary)
+                        .font(.caption)
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
                         Text(String(format: "$%.2f", vm.netThisMonth))
                             .font(.system(size: 28, weight: .bold))
@@ -114,7 +130,7 @@ struct IncomeScreen: View {
                         
                         Text(vm.netThisMonth >= 0 ? "(Surplus)" : "(Deficit)")
                             .font(.caption)
-                            .foregroundStyle(SwiftFinColor.textSecondary)
+                            .foregroundStyle(SwiftFinColor.textDarkSecondary)
                     }
                     
                     Divider()
@@ -124,7 +140,7 @@ struct IncomeScreen: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Income")
                                 .font(.caption)
-                                .foregroundStyle(SwiftFinColor.textSecondary)
+                                .foregroundStyle(SwiftFinColor.textDarkSecondary)
                             Text(String(format: "$%.2f", vm.totalIncomeThisMonth))
                                 .font(.subheadline)
                                 .fontWeight(.semibold)
@@ -135,14 +151,14 @@ struct IncomeScreen: View {
                         
                         Image(systemName: "minus")
                             .font(.caption)
-                            .foregroundStyle(SwiftFinColor.textSecondary)
+                            .foregroundStyle(SwiftFinColor.textDarkSecondary)
                         
                         Spacer()
                         
                         VStack(alignment: .trailing, spacing: 4) {
                             Text("Expenses")
                                 .font(.caption)
-                                .foregroundStyle(SwiftFinColor.textSecondary)
+                                .foregroundStyle(SwiftFinColor.textDarkSecondary)
                             Text(String(format: "$%.2f", vm.totalExpensesThisMonth))
                                 .font(.subheadline)
                                 .fontWeight(.semibold)
@@ -229,13 +245,13 @@ struct CheckingAccountsCarouselView: View {
                         HStack(spacing: 4) {
                             Image(systemName: "chevron.left")
                                 .font(.caption2)
-                                .foregroundStyle(SwiftFinColor.textSecondary.opacity(0.6))
+                                .foregroundStyle(SwiftFinColor.textDarkSecondary.opacity(0.6))
                             Text("Swipe to change accounts")
                                 .font(.caption2)
-                                .foregroundStyle(SwiftFinColor.textSecondary.opacity(0.6))
+                                .foregroundStyle(SwiftFinColor.textDarkSecondary.opacity(0.6))
                             Image(systemName: "chevron.right")
                                 .font(.caption2)
-                                .foregroundStyle(SwiftFinColor.textSecondary.opacity(0.6))
+                                .foregroundStyle(SwiftFinColor.textDarkSecondary.opacity(0.6))
                         }
                         .padding(.bottom, 8)
                     }
@@ -243,10 +259,10 @@ struct CheckingAccountsCarouselView: View {
                     VStack(spacing: 8) {
                         Image(systemName: "banknote")
                             .font(.largeTitle)
-                            .foregroundStyle(SwiftFinColor.textSecondary)
+                            .foregroundStyle(SwiftFinColor.textDarkSecondary)
                         Text("No checking accounts found")
                             .font(.caption)
-                            .foregroundStyle(SwiftFinColor.textSecondary)
+                            .foregroundStyle(SwiftFinColor.textDarkSecondary)
                     }
                     .frame(height: 120)
                     .frame(maxWidth: .infinity)
@@ -279,10 +295,10 @@ struct CheckingAccountCard: View {
                     Text(accountAlias)
                         .font(.title3)
                         .fontWeight(.bold)
-                        .foregroundStyle(SwiftFinColor.textPrimary)
+                        .foregroundStyle(SwiftFinColor.textDark)
                     Text("Checking Account")
                         .font(.caption)
-                        .foregroundStyle(SwiftFinColor.textSecondary)
+                        .foregroundStyle(SwiftFinColor.textDarkSecondary)
                 }
                 Spacer()
             }
@@ -303,13 +319,14 @@ struct CheckingAccountCard: View {
                     Text(selectedTab == .deposits ? "Recent Deposits" : "Recent Purchases")
                         .font(.subheadline)
                         .fontWeight(.semibold)
+                        .foregroundStyle(SwiftFinColor.textDark)
                     Spacer()
                     if isLoadingTransactions { ProgressView().scaleEffect(0.8) }
                     else {
                         let count = selectedTab == .deposits ? deposits.count : purchases.count
                         Text("\(count) total")
                             .font(.caption)
-                            .foregroundStyle(SwiftFinColor.textSecondary)
+                            .foregroundStyle(SwiftFinColor.textDarkSecondary)
                     }
                 }
                 
@@ -322,10 +339,10 @@ struct CheckingAccountCard: View {
                             VStack(spacing: 8) {
                                 Image(systemName: "arrow.down.circle")
                                     .font(.title2)
-                                    .foregroundStyle(SwiftFinColor.textSecondary)
+                                    .foregroundStyle(SwiftFinColor.textDarkSecondary)
                                 Text("No deposits found")
                                     .font(.caption)
-                                    .foregroundStyle(SwiftFinColor.textSecondary)
+                                    .foregroundStyle(SwiftFinColor.textDarkSecondary)
                             }
                             .frame(height: 100)
                             .frame(maxWidth: .infinity)
@@ -348,10 +365,10 @@ struct CheckingAccountCard: View {
                             VStack(spacing: 8) {
                                 Image(systemName: "cart")
                                     .font(.title2)
-                                    .foregroundStyle(SwiftFinColor.textSecondary)
+                                    .foregroundStyle(SwiftFinColor.textDarkSecondary)
                                 Text("No purchases found")
                                     .font(.caption)
-                                    .foregroundStyle(SwiftFinColor.textSecondary)
+                                    .foregroundStyle(SwiftFinColor.textDarkSecondary)
                             }
                             .frame(height: 100)
                             .frame(maxWidth: .infinity)
@@ -403,11 +420,11 @@ struct DepositRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(deposit.description)
                     .font(.subheadline)
-                    .foregroundStyle(SwiftFinColor.textPrimary)
+                    .foregroundStyle(SwiftFinColor.textDark)
                     .lineLimit(1)
                 Text(deposit.date.formatted(date: .abbreviated, time: .omitted))
                     .font(.caption)
-                    .foregroundStyle(SwiftFinColor.textSecondary)
+                    .foregroundStyle(SwiftFinColor.textDarkSecondary)
             }
             
             Spacer()
@@ -438,13 +455,13 @@ struct PurchaseRowIncome: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(purchase.merchantName)
                     .font(.subheadline)
-                    .foregroundStyle(SwiftFinColor.textPrimary)
+                    .foregroundStyle(SwiftFinColor.textDark)
                     .lineLimit(1)
                 
                 HStack(spacing: 4) {
                     Text(purchase.date.formatted(date: .abbreviated, time: .omitted))
                         .font(.caption)
-                        .foregroundStyle(SwiftFinColor.textSecondary)
+                        .foregroundStyle(SwiftFinColor.textDarkSecondary)
                     
                     if let category = purchase.selectedCategory, category != "-" {
                         Text("•")
