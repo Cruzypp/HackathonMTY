@@ -1,7 +1,7 @@
 import Foundation
 import Combine
 
-// Helper struct to hold API purchase with merchant info
+// Helper struct to hold API purchase with merchant info and user category
 struct PurchaseDisplay: Identifiable {
     let id: String
     let merchantName: String
@@ -9,6 +9,8 @@ struct PurchaseDisplay: Identifiable {
     let accountId: String
     let amount: Double
     let date: Date
+    let rawDescription: String
+    var selectedCategory: String?
 }
 
 // Helper for credit card debt summary
@@ -51,6 +53,47 @@ final class ExpensesViewModel: ObservableObject {
     func spentByCategoryThisMonth() -> [(name: String, amount: Double)] { ledger?.spentByCategoryThisMonth() ?? [] }
     func usedForBudget(_ name: String) -> Double { ledger?.usedForBudget(name) ?? 0 }
     
+    // Purchases for all checking accounts (using API purchases already fetched)
+    func checkingPurchases() -> [PurchaseDisplay] {
+        guard let ledger = ledger else { return [] }
+        let checkingIds = ledger.accounts
+            .filter { $0.type.lowercased().contains("checking") }
+            .map { $0.id }
+        return apiPurchases
+            .filter { checkingIds.contains($0.accountId) }
+            .sorted { $0.date > $1.date }
+    }
+
+    // Checking accounts list for UI carousels
+    func checkingAccounts() -> [Account] {
+        guard let ledger = ledger else {
+            print("⚠️ checkingAccounts: No ledger available")
+            return []
+        }
+        var list = ledger.accounts.filter { $0.type.lowercased().contains("checking") }
+        print("📊 checkingAccounts: Found \(list.count) checking accounts in ledger")
+        
+        // Always include override checking account if configured, even if it's not in the API accounts list
+        let overrideId = LocalSecrets.nessieCheckingAccountId
+        print("🔍 checkingAccounts: Override ID configured: \(overrideId)")
+        
+        if !overrideId.isEmpty && !list.contains(where: { $0.id == overrideId }) {
+            print("🔧 ExpensesVM: Adding synthetic checking account for override id: \(overrideId)")
+            let synthetic = Account(
+                id: overrideId,
+                type: "Checking",
+                nickname: "BBVA Nómina",
+                rewards: 0,
+                balance: 0,
+                accountNumber: "",
+                customerId: LocalSecrets.nessieCustomerId
+            )
+            list.append(synthetic)
+        }
+        print("📊 checkingAccounts: Returning \(list.count) total checking accounts")
+        return list
+    }
+    
     func refreshData() {
         print("🔄 ExpensesVM: Manual refresh triggered")
         fetchPurchasesFromAPI()
@@ -72,6 +115,7 @@ final class ExpensesViewModel: ObservableObject {
                 print("✅ ExpensesVM: Got \(accounts.count) accounts")
                 var allPurchases: [PurchaseDisplay] = []
                 let group = DispatchGroup()
+                var seenPurchaseIds = Set<String>()
                 
                 for account in accounts {
                     group.enter()
@@ -105,18 +149,73 @@ final class ExpensesViewModel: ObservableObject {
                                 }
                                 
                                 let date = Self.parseDate(purchase.purchaseDate)
+                                let savedCategory = CategoryStore.shared.getCategory(for: purchase.id)
+                                guard !seenPurchaseIds.contains(purchase.id) else { continue }
+                                seenPurchaseIds.insert(purchase.id)
                                 let display = PurchaseDisplay(
                                     id: purchase.id,
                                     merchantName: merchantName,
                                     accountAlias: accountAlias,
                                     accountId: account.id,
                                     amount: purchase.amount,
-                                    date: date
+                                    date: date,
+                                    rawDescription: purchase.description,
+                                    selectedCategory: savedCategory
                                 )
                                 allPurchases.append(display)
                             }
                         case .failure(let error):
                             print("❌ Error fetching purchases for \(accountAlias): \(error)")
+                        }
+                    }
+                }
+
+                // ALWAYS fetch for configured checking account override (even if it's in the list)
+                let checkingOverride = LocalSecrets.nessieCheckingAccountId
+                print("🏦 Checking override ID from config: '\(checkingOverride)'")
+                
+                if !checkingOverride.isEmpty {
+                    group.enter()
+                    let alias = "BBVA Nómina"
+                    print("🔍 EXPLICIT Fetching purchases for checking account id: \(checkingOverride)")
+                    print("🌐 URL: http://api.nessieisreal.com/accounts/\(checkingOverride)/purchases?key=...")
+                    
+                    NessieService.shared.fetchPurchases(forAccountId: checkingOverride, apiKey: apiKey) { pResult in
+                        defer { group.leave() }
+                        switch pResult {
+                        case .success(let purchases):
+                            print("✅ SUCCESS: Got \(purchases.count) purchases for checking override")
+                            for purchase in purchases {
+                                var merchantName = purchase.description
+                                if !purchase.merchantId.isEmpty {
+                                    let sem = DispatchSemaphore(value: 0)
+                                    NessieService.shared.fetchMerchant(forId: purchase.merchantId, apiKey: apiKey) { mResult in
+                                        if case .success(let merchant) = mResult { merchantName = merchant.name }
+                                        sem.signal()
+                                    }
+                                    sem.wait()
+                                }
+                                let date = Self.parseDate(purchase.purchaseDate)
+                                guard !seenPurchaseIds.contains(purchase.id) else {
+                                    print("⚠️ Skipping duplicate purchase: \(purchase.id)")
+                                    continue
+                                }
+                                seenPurchaseIds.insert(purchase.id)
+                                let display = PurchaseDisplay(
+                                    id: purchase.id,
+                                    merchantName: merchantName,
+                                    accountAlias: alias,
+                                    accountId: checkingOverride,
+                                    amount: purchase.amount,
+                                    date: date,
+                                    rawDescription: purchase.description,
+                                    selectedCategory: CategoryStore.shared.getCategory(for: purchase.id)
+                                )
+                                allPurchases.append(display)
+                                print("➕ Added purchase: \(merchantName) - $\(purchase.amount)")
+                            }
+                        case .failure(let error):
+                            print("❌ ERROR fetching explicit checking purchases: \(error)")
                         }
                     }
                 }
@@ -175,6 +274,50 @@ final class ExpensesViewModel: ObservableObject {
     func purchasesForAccount(_ accountId: String) -> [PurchaseDisplay] {
         apiPurchases.filter { $0.accountId == accountId }
     }
+
+    // Unified purchases for an account: prefer API list; if empty, fallback to ledger transactions
+    func purchasesForAccountUnified(_ accountId: String) -> [PurchaseDisplay] {
+        print("🔎 purchasesForAccountUnified called for accountId: \(accountId)")
+        let api = purchasesForAccount(accountId)
+        print("📦 API purchases for \(accountId): \(api.count)")
+        
+        if !api.isEmpty {
+            print("✅ Returning \(api.count) API purchases")
+            return api
+        }
+
+        print("⚠️ No API purchases, trying ledger fallback...")
+        guard let ledger = ledger else {
+            print("❌ No ledger available for fallback")
+            return []
+        }
+        
+        var alias = ledger.accounts.first(where: { $0.id == accountId })
+            .map { $0.nickname.isEmpty ? $0.type : $0.nickname } ?? "Account"
+        if accountId == LocalSecrets.nessieCheckingAccountId && alias == "Account" {
+            alias = "BBVA Nómina"
+        }
+        
+        let txs = ledger.transactions.filter { $0.kind == .expense && $0.accountId == accountId }
+        print("💰 Found \(txs.count) expense transactions in ledger for this account")
+        
+        let mapped: [PurchaseDisplay] = txs.map { tx in
+            let cat = CategoryStore.shared.getCategory(for: tx.purchaseId ?? "")
+            return PurchaseDisplay(
+                id: tx.purchaseId ?? UUID().uuidString,
+                merchantName: tx.title,
+                accountAlias: alias,
+                accountId: accountId,
+                amount: tx.amount,
+                date: tx.date,
+                rawDescription: tx.title,
+                selectedCategory: cat
+            )
+        }.sorted { $0.date > $1.date }
+        
+        print("✅ Returning \(mapped.count) mapped purchases from ledger")
+        return mapped
+    }
     
     private static func parseDate(_ s: String) -> Date {
         let iso = ISO8601DateFormatter()
@@ -184,7 +327,12 @@ final class ExpensesViewModel: ObservableObject {
         df.locale = Locale(identifier: "en_US_POSIX")
         df.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
         if let d = df.date(from: s) { return d }
-        
+        // Try short date (yyyy-MM-dd)
+        let short = DateFormatter()
+        short.locale = Locale(identifier: "en_US_POSIX")
+        short.dateFormat = "yyyy-MM-dd"
+        if let d = short.date(from: s) { return d }
+
         return Date()
     }
 }

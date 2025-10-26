@@ -47,14 +47,8 @@ final class LedgerViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     // Published Data
-    @Published var transactions: [Tx] = [
-        .init(date: .now, title: "Groceries", category: "Food", amount: 48.2, kind: .expense, accountId: nil),
-        .init(date: .now, title: "Metro", category: "Transport", amount: 12, kind: .expense, accountId: nil),
-        .init(date: .now.addingTimeInterval(TimeInterval(-86400*3)), title: "Salary", category: "Salary", amount: 3200, kind: .income, accountId: nil),
-        .init(date: .now.addingTimeInterval(TimeInterval(-86400*10)), title: "Upwork", category: "Freelance", amount: 380, kind: .income, accountId: nil),
-        .init(date: .now.addingTimeInterval(TimeInterval(-86400*5)), title: "Electric Bill", category: "Bills", amount: 450, kind: .expense, accountId: nil),
-        .init(date: .now.addingTimeInterval(TimeInterval(-86400*6)), title: "Dinner", category: "Food", amount: 420, kind: .expense, accountId: nil),
-    ]
+    // Real transactions are loaded from the API via Preloader
+    @Published var transactions: [Tx] = []
 
     @Published var budgets: [Budget] = [
         .init(name: "Rent", total: 900),

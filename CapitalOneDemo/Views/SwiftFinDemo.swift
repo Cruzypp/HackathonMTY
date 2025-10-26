@@ -24,17 +24,29 @@ extension Color {
     }
 }
 
-/// Design tokens (paleta fría modo oscuro)
+/// Design tokens (Paleta Capital One - Inversión: Fondo Blanco)
 enum SwiftFinColor {
-    static let bgPrimary       = Color(hex: "#0B1220")      // fondo principal
-    static let surface         = Color(hex: "#0F172A")      // tarjetas
-    static let surfaceAlt      = Color(hex: "#111827")
-    static let textPrimary     = Color(hex: "#E5E7EB")
-    static let textSecondary   = Color(hex: "#94A3B8")
-    static let accentBlue      = Color(hex: "#3B82F6")
-    static let positiveGreen   = Color(hex: "#22C55E")
-    static let negativeRed     = Color(hex: "#EF4444")
-    static let divider         = Color(hex: "#1F2937")
+    // Fondos - Invertidos a blanco/claro
+    static let bgPrimary       = Color(hex: "#F5F5F7")      // Fondo blanco/gris muy claro
+    static let surface         = Color(hex: "#001F3F")      // Capital One Navy para cards
+    static let surfaceAlt      = Color(hex: "#003D66")      // Capital One Blue (cards alt)
+    
+    // Text Colors (para fondos blancos)
+    static let textPrimary     = Color(hex: "#1F2937")      // Texto oscuro principal
+    static let textSecondary   = Color(hex: "#6B7280")      // Texto oscuro secundario
+    
+    // Text Colors (para cards azules oscuras)
+    static let textDark        = Color(hex: "#FFFFFF")      // Blanco para cards
+    static let textDarkSecondary = Color(hex: "#B0C4D4")    // Gris claro para cards
+    
+    // Accent Colors - Capital One Palette
+    static let accentBlue      = Color(hex: "#0099DD")      // Capital One Bright Blue
+    static let capitalOneRed   = Color(hex: "#D92228")      // Capital One Red (primary brand)
+    static let positiveGreen   = Color(hex: "#00856A")      // Capital One Teal/Green
+    static let negativeRed     = Color(hex: "#D92228")      // Capital One Red
+    
+    // Dividers and Borders
+    static let divider         = Color(hex: "#E5E7EB")      // Gris claro para fondos blancos
 }
 
 // NOTE: MonthSelector and LedgerViewModel are in `ViewModels/ViewModels.swift`
@@ -54,7 +66,7 @@ struct SwiftFinDemoApp: App {
 
     var body: some Scene {
         WindowGroup {
-            SwiftFinRoot()
+            ContentView()
                 .environmentObject(ledger)
                 .environmentObject(monthSelector)
                 .preferredColorScheme(.dark)
@@ -63,6 +75,6 @@ struct SwiftFinDemoApp: App {
 }
 
 // Top-level tab enum
-enum TopTab: String, CaseIterable { case overview = "Overview", expenses = "Expenses", income = "Income", reports = "Reports" }
+enum TopTab: String, CaseIterable { case overview = "Overview", expenses = "Expenses", income = "Income" }
 
 

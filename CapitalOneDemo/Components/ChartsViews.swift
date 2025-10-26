@@ -16,24 +16,58 @@ struct MiniTrendChart: View {
 }
 
 struct BarCashFlow: View {
-    let months = ["Jan","Feb","Mar","Apr","May","Jun"]
-    let income = [1800, 2100, 2000, 2300, 2250, 2400]
-    let expense = [1200, 1400, 1350, 1500, 1600, 1860]
-
+    @EnvironmentObject var ledger: LedgerViewModel
+    @EnvironmentObject var monthSelector: MonthSelector
+    @StateObject private var vm = OverviewViewModel()
+    
     var body: some View {
+        let monthlyData = vm.monthlyCashFlow(months: 10)
+        
         Chart {
-            ForEach(Array(months.enumerated()), id: \.offset) { idx, m in
-                BarMark(x: .value("Month", m), y: .value("Income", income[idx]))
-                    .foregroundStyle(SwiftFinColor.accentBlue)
-                BarMark(x: .value("Month", m), y: .value("Expense", expense[idx]))
-                    .foregroundStyle(SwiftFinColor.textSecondary.opacity(0.5))
+            ForEach(monthlyData) { data in
+                BarMark(
+                    x: .value("Month", data.month),
+                    y: .value("Income", data.income)
+                )
+                .foregroundStyle(SwiftFinColor.positiveGreen)
+                .position(by: .value("Type", "Income"))
+                
+                BarMark(
+                    x: .value("Month", data.month),
+                    y: .value("Expense", data.expense)
+                )
+                .foregroundStyle(SwiftFinColor.negativeRed)
+                .position(by: .value("Type", "Expense"))
             }
         }
         .chartYAxisLabel("USD")
         .chartForegroundStyleScale([
-            "Income": SwiftFinColor.accentBlue,
-            "Expense": SwiftFinColor.textSecondary
+            "Income": SwiftFinColor.positiveGreen,
+            "Expense": SwiftFinColor.negativeRed
         ])
+        .chartLegend(position: .bottom, alignment: .center) {
+            HStack(spacing: 20) {
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(SwiftFinColor.positiveGreen)
+                        .frame(width: 8, height: 8)
+                    Text("Income")
+                        .font(.caption)
+                        .foregroundStyle(SwiftFinColor.textSecondary)
+                }
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(SwiftFinColor.negativeRed)
+                        .frame(width: 8, height: 8)
+                    Text("Expenses")
+                        .font(.caption)
+                        .foregroundStyle(SwiftFinColor.textSecondary)
+                }
+            }
+        }
+        .onAppear {
+            vm.configure(ledger: ledger, monthSelector: monthSelector)
+        }
     }
 }
 
@@ -60,13 +94,53 @@ struct DonutSpendingConnected: View {
 }
 
 struct BarIncome: View {
-    let months = ["May","Jun","Jul","Aug","Sep","Oct"]
-    let incomeData = [2000, 2150, 2400, 2200, 2500, 3580.0]
-
+    @EnvironmentObject var ledger: LedgerViewModel
+    @EnvironmentObject var monthSelector: MonthSelector
+    @StateObject private var vm = IncomeViewModel()
+    
+    // Calculate monthly income data
+    private func generateMonthlyData() -> [(month: String, income: Double)] {
+        let calendar = Calendar.current
+        let now = Date()
+        var monthsData: [(month: String, income: Double)] = []
+        
+        for i in (0..<6).reversed() {
+            guard let targetDate = calendar.date(byAdding: .month, value: -i, to: now) else { continue }
+            let components = calendar.dateComponents([.year, .month], from: targetDate)
+            guard let year = components.year, let month = components.month else { continue }
+            
+            var startComponents = DateComponents()
+            startComponents.year = year
+            startComponents.month = month
+            startComponents.day = 1
+            
+            guard let startOfMonth = calendar.date(from: startComponents),
+                  let endOfMonth = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: startOfMonth) else {
+                continue
+            }
+            
+            let incomeTransactions = ledger.transactions.filter { tx in
+                tx.kind == .income && tx.date >= startOfMonth && tx.date <= endOfMonth
+            }
+            
+            let totalIncome = incomeTransactions.reduce(0.0) { $0 + $1.amount }
+            
+            let monthFormatter = DateFormatter()
+            monthFormatter.dateFormat = "MMM"
+            let monthLabel = monthFormatter.string(from: targetDate)
+            
+            monthsData.append((month: monthLabel, income: totalIncome))
+        }
+        
+        return monthsData
+    }
+    
     var body: some View {
+        let monthsData = generateMonthlyData()
+        
         Chart {
-            ForEach(Array(months.enumerated()), id: \.offset) { idx, m in
-                BarMark(x: .value("Month", m), y: .value("Income", incomeData[idx]))
+            ForEach(Array(monthsData.enumerated()), id: \.offset) { idx, data in
+                BarMark(x: .value("Month", data.month), y: .value("Income", data.income))
                     .foregroundStyle(SwiftFinColor.positiveGreen)
             }
         }
@@ -82,6 +156,9 @@ struct BarIncome: View {
                 AxisGridLine()
                 AxisValueLabel()
             }
+        }
+        .onAppear {
+            vm.configure(ledger: ledger, monthSelector: monthSelector)
         }
     }
 }

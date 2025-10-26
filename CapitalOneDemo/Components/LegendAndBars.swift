@@ -54,3 +54,40 @@ struct CategoryRowBar: View {
         }
     }
 }
+
+// MARK: - Dynamic Category Spending Bar (synced with donut chart)
+struct CategorySpendingBar: View {
+    let name: String
+    let spent: Double
+    let total: Double
+    let color: Color
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(name)
+                Spacer()
+                Text(String(format: "$%.0f / $%.0f", spent, total))
+                    .foregroundStyle(SwiftFinColor.textSecondary)
+                    .font(.caption)
+            }
+            GeometryReader { geo in
+                let w = geo.size.width
+                let h: CGFloat = 10
+                let percentage = total > 0 ? min(spent / total, 1.0) : 0
+                let barWidth = w * percentage
+                
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: h/2)
+                        .fill(SwiftFinColor.surfaceAlt)
+                        .frame(height: h)
+                    
+                    RoundedRectangle(cornerRadius: h/2)
+                        .fill(color)
+                        .frame(width: barWidth, height: h)
+                }
+            }
+            .frame(height: 14)
+        }
+    }
+}
