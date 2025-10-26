@@ -7,6 +7,8 @@ struct ChatView: View {
     // 2. Variable para el campo de texto
     @State private var textInput: String = ""
     
+    // 3. variable para datos de usuario
+    @EnvironmentObject var ledgerViewModel: LedgerViewModel
     var body: some View {
         VStack {
             // --- Área de Mensajes ---
@@ -61,6 +63,10 @@ struct ChatView: View {
         }
         .navigationTitle("FinBot")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            viewModel.setContext(ledgerViewModel.financialSummary)
+            print("Chat context set to: \(ledgerViewModel.financialSummary)")
+        }
     }
     
     func sendMessage() {
