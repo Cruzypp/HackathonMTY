@@ -19,6 +19,7 @@ struct MonthSelectionControl: View {
                 Text(monthLabel)
                     .font(.headline)
                     .foregroundStyle(Color.white)
+
                 Text(String(yearLabel))
                     .font(.caption)
                     .foregroundStyle(SwiftFinColor.textSecondary)
