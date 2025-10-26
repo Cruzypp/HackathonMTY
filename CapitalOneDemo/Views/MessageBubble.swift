@@ -38,7 +38,7 @@ struct MessageBubble: View {
             }
             
             VStack(alignment: message.isFromUser ? .trailing : .leading, spacing: 4) {
-                Text(message.text)
+                Text(.init(message.text))
                     .padding(12)
                     .background(
                         ZStack {
