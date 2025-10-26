@@ -1,7 +1,5 @@
 ## 👥 Collaborators
 
-Add your name below to recognize your contribution to SwiftFin:
-
 - Miguel Ángel Gavito González
 - Juan Luis Alvarez Cisneros
 - Cruz Yael Pérez González
